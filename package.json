@@ -1,0 +1,27 @@
+{
+  "name": "rspack-browser-demo",
+  "version": "1.0.0",
+  "description": "Demo project for @rspack/core browser bundling",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "rspack",
+    "browser",
+    "bundler"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@rspack/browser": "^1.0.0",
+    "rspack-vue-loader": "^17.5.0",
+    "vue": "3.5.13"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
