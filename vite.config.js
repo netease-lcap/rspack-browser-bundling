@@ -6,6 +6,7 @@ import vitePluginCOI from './vite-plugin-coi.js'
 const __dirname = nodePath.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
+  base: process.env.GITHUB_ACTIONS ? '/rspack-browser-bundling/' : '/',
   plugins: [
     vitePluginCOI()
   ],
