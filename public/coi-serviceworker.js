@@ -80,17 +80,28 @@ if (typeof window === 'undefined') {
         const n = navigator;
         const controlling = n.serviceWorker && n.serviceWorker.controller;
 
-        // If we are running in a secure context and SharedArrayBuffer is available,
-        // we don't need to do anything.
-        const coiScriptUrl = new URL('coi-serviceworker.js', window.location.href).href;
-        if (window.crossOriginIsolated !== false || !controlling || controlling.scriptURL !== coiScriptUrl) {
+        // If we are already cross-origin isolated, we don't need to do anything.
+        if (window.crossOriginIsolated !== false) {
             return;
         }
 
-        // Deregister the service worker if needed
-        if (coi.shouldDeregister()) {
-            controlling.postMessage({ type: "deregister" });
-            return;
+        // If there's a controlling service worker but it's not ours, don't interfere
+        if (controlling) {
+            const currentScriptUrl = new URL('coi-serviceworker.js', window.location.href).href;
+            if (!controlling.scriptURL.includes('coi-serviceworker')) {
+                return;
+            }
+            
+            // Deregister the service worker if needed
+            if (coi.shouldDeregister()) {
+                controlling.postMessage({ type: "deregister" });
+                return;
+            }
+
+            controlling.postMessage({
+                type: "coepCredentialless",
+                value: coi.coepCredentialless(),
+            });
         }
 
         // Reload the page when we detect a controller change if not already cross-origin isolated
@@ -98,11 +109,6 @@ if (typeof window === 'undefined') {
             if (window.crossOriginIsolated !== false) {
                 coi.doReload();
             }
-        });
-
-        controlling.postMessage({
-            type: "coepCredentialless",
-            value: coi.coepCredentialless(),
         });
 
         // Register the service worker
