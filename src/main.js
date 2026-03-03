@@ -4,20 +4,35 @@
  */
 
 import { rspack, builtinMemFs, BrowserRequirePlugin, DefinePlugin, HtmlRspackPlugin, BrowserHttpImportEsmPlugin } from '@rspack/browser';
-
 import LcapPlugin from './rspack/plugins/lcap';
 import MissingCssFallbackPlugin from './rspack/plugins/missing-css-fallback';
 import MissingFileFallbackPlugin from './rspack/plugins/missing-file-fallback';
 import CustomVueLoader from './rspack/loaders/vue';
+import filesData from './files.js';
 
-import files from './files';
+// 存储文件数据（可编辑）
+let files = { ...filesData };
+
+// 当前正在编辑的文件
+let currentEditingFile = null;
 
 // 存储打包结果
 let bundledCode = null;
 let compiler = null;
 let distFilesCache = null; // 缓存打包产物
 
+// 文件夹折叠状态
+const folderCollapseState = new Map(); // 存储每个文件夹的折叠状态
+
+// Monaco Editor 实例
+let monacoEditor = null;
+
 // 获取 DOM 元素
+const fileTreeEl = document.getElementById('fileTree');
+const codeEditorEl = document.getElementById('codeEditor');
+const editorTitleEl = document.getElementById('editorTitle');
+const saveFileBtnEl = document.getElementById('saveFileBtn');
+
 const bundleBtn = document.getElementById('bundleBtn');
 const runBtn = document.getElementById('runBtn');
 const downloadBtn = document.getElementById('downloadBtn');
@@ -32,6 +47,57 @@ const runOutputSection = document.getElementById('runOutputSection');
 const buildTimeEl = document.getElementById('buildTime');
 const outputSizeEl = document.getElementById('outputSize');
 const moduleCountEl = document.getElementById('moduleCount');
+
+/**
+ * 获取文件语言类型
+ */
+function getFileLanguage(filename) {
+  if (filename.endsWith('.js')) return 'javascript';
+  if (filename.endsWith('.ts')) return 'typescript';
+  if (filename.endsWith('.vue')) return 'html'; // Vue SFC 使用 HTML 高亮
+  if (filename.endsWith('.css')) return 'css';
+  if (filename.endsWith('.html')) return 'html';
+  if (filename.endsWith('.json')) return 'json';
+  if (filename.endsWith('.md')) return 'markdown';
+  return 'plaintext';
+}
+
+/**
+ * 初始化 Monaco Editor
+ */
+function initMonacoEditor() {
+  return new Promise((resolve, reject) => {
+    require(['vs/editor/editor.main'], function() {
+      try {
+        monacoEditor = monaco.editor.create(codeEditorEl, {
+          value: '// 点击左侧文件进行编辑...',
+          language: 'javascript',
+          theme: 'vs-dark',
+          fontSize: 14,
+          minimap: { enabled: true },
+          automaticLayout: true,
+          scrollBeyondLastLine: false,
+          renderWhitespace: 'selection',
+          tabSize: 2,
+          insertSpaces: true,
+          formatOnPaste: true,
+          formatOnType: true,
+        });
+
+        // 添加保存快捷键 Ctrl+S / Cmd+S
+        monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+          saveFile();
+        });
+
+        console.log('✅ Monaco Editor 初始化成功');
+        resolve(monacoEditor);
+      } catch (error) {
+        console.error('❌ Monaco Editor 初始化失败:', error);
+        reject(error);
+      }
+    });
+  });
+}
 
 /**
  * 显示消息
@@ -52,6 +118,167 @@ function formatBytes(bytes) {
   const sizes = ['Bytes', 'KB', 'MB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+/**
+ * 构建文件树数据结构
+ */
+function buildFileTree(files) {
+  const tree = {};
+  
+  Object.keys(files)
+    .filter(path => !path.includes('node_modules') && !path.includes('lcap_modules'))
+    .sort()
+    .forEach(path => {
+      const parts = path.split('/').filter(p => p);
+      let current = tree;
+      
+      parts.forEach((part, index) => {
+        if (!current[part]) {
+          current[part] = index === parts.length - 1 ? { __isFile: true, __path: path } : {};
+        }
+        if (!current[part].__isFile) {
+          current = current[part];
+        }
+      });
+    });
+  
+  return tree;
+}
+
+/**
+ * 渲染文件树
+ */
+function renderFileTree(tree, container, level = 0, parentPath = '') {
+  Object.keys(tree).forEach(key => {
+    if (key.startsWith('__')) return;
+    
+    const item = tree[key];
+    const isFile = item.__isFile;
+    const currentPath = parentPath ? `${parentPath}/${key}` : key;
+    
+    const li = document.createElement('li');
+    li.className = `file-tree-item ${isFile ? 'file' : 'folder'}`;
+    li.style.paddingLeft = `${level * 15 + 10}px`;
+    
+    if (!isFile) {
+      // 文件夹：添加折叠图标
+      const collapseIcon = document.createElement('span');
+      collapseIcon.className = 'collapse-icon';
+      const isCollapsed = folderCollapseState.get(currentPath) ?? (level > 0); // 默认根目录展开，子目录折叠
+      collapseIcon.textContent = isCollapsed ? '▶' : '▼';
+      collapseIcon.style.marginRight = '4px';
+      collapseIcon.style.cursor = 'pointer';
+      collapseIcon.style.userSelect = 'none';
+      collapseIcon.style.display = 'inline-block';
+      collapseIcon.style.width = '12px';
+      
+      const folderIcon = document.createElement('span');
+      folderIcon.className = 'icon';
+      folderIcon.textContent = level === 0 ? '📁' : '📂';
+      
+      const text = document.createElement('span');
+      text.textContent = key;
+      
+      li.appendChild(collapseIcon);
+      li.appendChild(folderIcon);
+      li.appendChild(text);
+      
+      // 点击文件夹切换折叠状态
+      li.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isCurrentlyCollapsed = folderCollapseState.get(currentPath) ?? (level > 0);
+        folderCollapseState.set(currentPath, !isCurrentlyCollapsed);
+        
+        // 重新渲染整个文件树
+        fileTreeEl.innerHTML = '';
+        const newTree = buildFileTree(files);
+        renderFileTree(newTree, fileTreeEl);
+      });
+      
+      container.appendChild(li);
+      
+      // 仅在未折叠时渲染子节点（优化性能）
+      if (!isCollapsed) {
+        renderFileTree(item, container, level + 1, currentPath);
+      }
+    } else {
+      // 文件：普通渲染
+      const icon = document.createElement('span');
+      icon.className = 'icon';
+      icon.textContent = getFileIcon(key);
+      icon.style.marginLeft = '16px'; // 对齐文件夹内容
+      
+      const text = document.createElement('span');
+      text.textContent = key;
+      
+      li.appendChild(icon);
+      li.appendChild(text);
+      li.addEventListener('click', () => openFile(item.__path));
+      
+      container.appendChild(li);
+    }
+  });
+}
+
+/**
+ * 打开文件到编辑器
+ */
+function openFile(path) {
+  if (!monacoEditor) {
+    showMessage('❌ 编辑器未初始化', 'error');
+    return;
+  }
+
+  currentEditingFile = path;
+  const content = files[path] || '';
+  const language = getFileLanguage(path);
+  
+  // 获取当前模型或创建新模型
+  const model = monaco.editor.getModel(monaco.Uri.file(path));
+  if (model) {
+    monacoEditor.setModel(model);
+  } else {
+    const newModel = monaco.editor.createModel(content, language, monaco.Uri.file(path));
+    monacoEditor.setModel(newModel);
+  }
+  
+  editorTitleEl.textContent = `📝 ${path}`;
+  saveFileBtnEl.disabled = false;
+  
+  // 更新文件树选中状态
+  document.querySelectorAll('.file-tree-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  event.currentTarget.classList.add('active');
+  
+  showMessage(`📂 已打开: ${path}`, 'success');
+}
+
+/**
+ * 保存文件修改
+ */
+function saveFile() {
+  if (!currentEditingFile) {
+    showMessage('❌ 没有打开的文件', 'error');
+    return;
+  }
+  
+  if (!monacoEditor) {
+    showMessage('❌ 编辑器未初始化', 'error');
+    return;
+  }
+  
+  files[currentEditingFile] = monacoEditor.getValue();
+  showMessage(`✅ 已保存: ${currentEditingFile}`, 'success');
+}
+
+/**
+ * 初始化文件树
+ */
+function initFileTree() {
+  const tree = buildFileTree(files);
+  renderFileTree(tree, fileTreeEl);
 }
 
 /**
@@ -145,6 +372,13 @@ async function bundleCode() {
   statsEl.style.display = 'none';
   filesListEl.style.display = 'none';
   distFilesCache = null;
+
+  // 清理之前的 dist 文件
+  Object.keys(files).forEach(path => {
+    if (path.startsWith('/dist/')) {
+      delete files[path];
+    }
+  });
 
   try {
     files['/LOADER/rspack-vue-loader.js'] = '';
@@ -390,6 +624,16 @@ async function bundleCode() {
     const endTime = performance.now();
     const buildTime = (endTime - startTime).toFixed(2);
 
+    // 将 dist 文件添加到文件系统
+    distFiles.forEach(distPath => {
+      files[distPath] = outputFiles[distPath];
+    });
+
+    // 重新渲染文件树以显示 dist 文件
+    fileTreeEl.innerHTML = '';
+    const newTree = buildFileTree(files);
+    renderFileTree(newTree, fileTreeEl);
+
     // 更新统计信息
     buildTimeEl.textContent = buildTime + ' ms';
     outputSizeEl.textContent = formatBytes(bundledCode.length);
@@ -540,12 +784,29 @@ function runBundledCode() {
 bundleBtn.addEventListener('click', bundleCode);
 runBtn.addEventListener('click', runBundledCode);
 downloadBtn.addEventListener('click', downloadDistFiles);
+saveFileBtnEl.addEventListener('click', saveFile);
 
 // 暴露函数到全局对象，供 HTML onclick 使用
 window.downloadSingleFile = downloadSingleFile;
 window.viewFileContent = viewFileContent;
 
-// 初始化提示
-console.log('🚀 Rspack Browser Demo initialized');
-console.log('使用 @rspack/browser 和 builtinMemFs 进行浏览器端打包');
-console.log('准备就绪！');
+// 初始化应用
+(async function initApp() {
+  try {
+    console.log('🚀 Rspack Browser Demo 正在初始化...');
+    
+    // 初始化 Monaco Editor
+    await initMonacoEditor();
+    
+    // 初始化文件树
+    initFileTree();
+    
+    console.log('✅ 应用初始化完成');
+    console.log('使用 @rspack/browser 和 builtinMemFs 进行浏览器端打包');
+    console.log(`📁 已加载 ${Object.keys(files).length} 个文件`);
+    console.log('准备就绪！');
+  } catch (error) {
+    console.error('❌ 应用初始化失败:', error);
+    showMessage('❌ 编辑器初始化失败: ' + error.message, 'error');
+  }
+})();

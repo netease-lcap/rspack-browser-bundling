@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rspack Browser Demo</title>
+    <!-- Monaco Editor -->
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
     <style>
         * {
             margin: 0;
@@ -13,87 +15,186 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
         }
 
         .header {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
-            padding: 30px;
+            padding: 15px 20px;
             text-align: center;
+            flex-shrink: 0;
         }
 
         .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 1.8em;
+            margin-bottom: 5px;
         }
 
         .header p {
-            font-size: 1.1em;
+            font-size: 0.9em;
             opacity: 0.9;
         }
 
         .content {
-            padding: 30px;
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 280px;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 10px;
+            flex-shrink: 0;
+        }
+
+        .sidebar h3 {
+            color: #333;
+            font-size: 1em;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .file-tree {
+            list-style: none;
+        }
+
+        .file-tree-item {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .file-tree-item:hover {
+            background: #e0e0e0;
+        }
+
+        .file-tree-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .file-tree-item.folder {
+            font-weight: 600;
+            color: #764ba2;
+        }
+
+        .file-tree-item .icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: white;
+        }
+
+        .operation-panel {
+            width: 350px;
+            border-left: 1px solid #e0e0e0;
+            overflow-y: auto;
+            background: #fafafa;
+            padding: 15px;
+            flex-shrink: 0;
         }
 
         .editor-section {
-            margin-bottom: 30px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-shrink: 0;
         }
 
         .editor-section h2 {
             color: #333;
-            margin-bottom: 15px;
-            font-size: 1.5em;
+            margin: 0;
+            font-size: 1em;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-toolbar {
+            padding: 6px 12px;
+            font-size: 13px;
+            border: 1px solid #667eea;
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+            color: #667eea;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-toolbar:hover {
+            background: #667eea;
+            color: white;
         }
 
         .code-editor {
-            width: 100%;
-            min-height: 200px;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 14px;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            background: #f8f9fa;
-            resize: vertical;
-            line-height: 1.5;
+            flex: 1;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
         }
 
-        .code-editor:focus {
-            outline: none;
+        .code-editor:focus-within {
             border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .button-group {
             display: flex;
-            gap: 15px;
-            margin: 20px 0;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
         }
 
         button {
-            flex: 1;
-            padding: 15px 30px;
-            font-size: 16px;
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 14px;
             font-weight: 600;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
         }
 
         .btn-primary {
@@ -101,9 +202,8 @@
             color: white;
         }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        .btn-primary:hover:not(:disabled) {
+            opacity: 0.9;
         }
 
         .btn-secondary {
@@ -128,25 +228,29 @@
 
         .output-section {
             background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .output-section h3 {
             color: #333;
-            margin-bottom: 15px;
-            font-size: 1.3em;
+            margin-bottom: 10px;
+            font-size: 1em;
+            font-weight: 600;
         }
 
         .output-content {
             background: #1e1e1e;
             color: #d4d4d4;
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 13px;
-            padding: 15px;
-            border-radius: 6px;
-            max-height: 400px;
+            font-size: 11px;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 200px;
             overflow-y: auto;
             white-space: pre-wrap;
             word-break: break-all;
@@ -154,28 +258,27 @@
 
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+            grid-template-columns: 1fr;
+            gap: 8px;
         }
 
         .stat-card {
             background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
+            padding: 10px 12px;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
         }
 
         .stat-label {
             color: #666;
-            font-size: 0.9em;
-            margin-bottom: 5px;
+            font-size: 0.85em;
+            margin-bottom: 4px;
         }
 
         .stat-value {
             color: #333;
-            font-size: 1.5em;
-            font-weight: bold;
+            font-size: 1.2em;
+            font-weight: 600;
         }
 
         .loading {
@@ -211,17 +314,19 @@
         }
 
         .files-list {
-            margin: 20px 0;
+            margin: 10px 0;
             background: white;
-            border-radius: 8px;
+            border-radius: 4px;
             overflow: hidden;
+            max-height: 250px;
+            overflow-y: auto;
         }
 
         .file-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 15px;
+            padding: 8px 10px;
             border-bottom: 1px solid #e0e0e0;
             transition: background 0.2s;
         }
@@ -242,7 +347,7 @@
         }
 
         .file-icon {
-            font-size: 20px;
+            font-size: 16px;
         }
 
         .file-details {
@@ -251,27 +356,27 @@
 
         .file-name {
             font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 14px;
+            font-size: 12px;
             color: #333;
             font-weight: 500;
         }
 
         .file-size {
-            font-size: 12px;
+            font-size: 10px;
             color: #666;
             margin-top: 2px;
         }
 
         .file-actions {
             display: flex;
-            gap: 8px;
+            gap: 4px;
         }
 
         .btn-small {
-            padding: 6px 12px;
-            font-size: 12px;
+            padding: 4px 8px;
+            font-size: 11px;
             border: none;
-            border-radius: 4px;
+            border-radius: 3px;
             cursor: pointer;
             transition: all 0.2s;
             font-weight: 500;
@@ -305,45 +410,74 @@
         </div>
 
         <div class="content">
-            <div class="button-group">
-                <button id="bundleBtn" class="btn-primary">
-                    🔨 打包代码
-                </button>
-                <button id="runBtn" class="btn-secondary" disabled>
-                    ▶️ 运行打包结果
-                </button>
-                <button id="downloadBtn" class="btn-secondary" disabled>
-                    💾 下载产物
-                </button>
+            <!-- 左侧边栏：文件树 -->
+            <div class="sidebar">
+                <h3>📁 项目文件</h3>
+                <ul class="file-tree" id="fileTree"></ul>
             </div>
 
-            <div class="output-section">
-                <h3>📊 打包结果</h3>
-                <div class="stats" id="stats" style="display: none;">
-                    <div class="stat-card">
-                        <div class="stat-label">打包时间</div>
-                        <div class="stat-value" id="buildTime">-</div>
+            <!-- 中间区域：编辑器 -->
+            <div class="editor-area">
+                <div class="editor-section">
+                    <div class="editor-header">
+                        <h2 id="editorTitle">💻 代码编辑器</h2>
+                        <div class="editor-toolbar">
+                            <button class="btn-toolbar" id="saveFileBtn" disabled>💾 保存</button>
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-label">输出大小</div>
-                        <div class="stat-value" id="outputSize">-</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">模块数量</div>
-                        <div class="stat-value" id="moduleCount">-</div>
+                    <div class="code-editor" id="codeEditor"></div>
+                </div>
+            </div>
+
+            <!-- 右侧操作面板 -->
+            <div class="operation-panel">
+                <!-- 操作按钮 -->
+                <div class="button-group">
+                    <button id="bundleBtn" class="btn-primary">
+                        🔨 打包代码
+                    </button>
+                    <button id="runBtn" class="btn-secondary" disabled>
+                        ▶️ 运行打包结果
+                    </button>
+                    <button id="downloadBtn" class="btn-secondary" disabled>
+                        💾 下载产物
+                    </button>
+                </div>
+
+                <!-- 统计信息 -->
+                <div class="output-section">
+                    <h3>📊 打包统计</h3>
+                    <div class="stats" id="stats" style="display: none;">
+                        <div class="stat-card">
+                            <div class="stat-label">打包时间</div>
+                            <div class="stat-value" id="buildTime">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">输出大小</div>
+                            <div class="stat-value" id="outputSize">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">模块数量</div>
+                            <div class="stat-value" id="moduleCount">-</div>
+                        </div>
                     </div>
                 </div>
-                
+
                 <!-- 文件列表 -->
                 <div id="filesList" class="files-list" style="display: none;"></div>
-                
-                <div id="output" class="output-content">等待打包...</div>
-                <div id="message"></div>
-            </div>
 
-            <div class="output-section" id="runOutputSection" style="display: none;">
-                <h3>🖥️ 运行输出</h3>
-                <div id="runOutput" class="output-content"></div>
+                <!-- 打包输出 -->
+                <div class="output-section">
+                    <h3>📋 打包输出</h3>
+                    <div id="output" class="output-content">等待打包...</div>
+                    <div id="message"></div>
+                </div>
+
+                <!-- 运行输出 -->
+                <div class="output-section" id="runOutputSection" style="display: none;">
+                    <h3>🖥️ 运行输出</h3>
+                    <div id="runOutput" class="output-content"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -364,6 +498,13 @@
             };
         }
     </script> -->
+    
+    <!-- Monaco Editor Loader -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script>
+        require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+    </script>
+    
     <script type="module" src="/src/main.js"></script>
 </body>
 </html>
