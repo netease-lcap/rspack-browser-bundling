@@ -1,10 +1,14 @@
 import { defineConfig } from 'vite'
 import nodePath from 'path'
 import { fileURLToPath } from 'url'
+import vitePluginCOI from './vite-plugin-coi.js'
 
 const __dirname = nodePath.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
+  plugins: [
+    vitePluginCOI()
+  ],
   define: {
     // global: 'globalThis',
     // 'process.env': {}
@@ -19,11 +23,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true,
-    headers: {
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-      'Cross-Origin-Opener-Policy': 'same-origin',
-    }
+    open: true
   },
   optimizeDeps: {
     exclude: ['@rspack/browser']
