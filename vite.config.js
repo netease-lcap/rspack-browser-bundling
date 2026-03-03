@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 const __dirname = nodePath.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
+  base: process.env.GITHUB_ACTIONS ? '/rspack-browser-bundling/' : '/',
   define: {
     // global: 'globalThis',
     // 'process.env': {}
