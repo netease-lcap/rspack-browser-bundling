@@ -125,9 +125,9 @@ function formatBytes(bytes) {
  */
 function buildFileTree(files) {
   const tree = {};
-  
+
   Object.keys(files)
-    .filter(path => !path.includes('node_modules') && !path.includes('lcap_modules'))
+    .filter(path => !path.includes('lcap_modules') && !path.includes('LOADER'))
     .sort()
     .forEach(path => {
       const parts = path.split('/').filter(p => p);
