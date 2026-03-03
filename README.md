@@ -4,18 +4,28 @@
 
 ## 📖 项目简介
 
-这是一个概念验证项目，展示了如何使用 `@rspack/browser` 在浏览器环境中进行完整的模块打包。通过可视化的界面，你可以：
+这是一个概念验证项目，展示了如何使用 `@rspack/browser` 在浏览器环境中进行完整的模块打包。
 
-- ✍️ 在浏览器中编写代码（支持 JavaScript/Vue 组件）
-- 📦 完全在浏览器中进行 Rspack 打包（无需后端）
-- 🎨 支持 Vue 3 单文件组件（.vue）编译
-- ▶️ 直接运行打包后的代码
-- 💾 下载打包产物为 ZIP 文件
-- 📊 查看详细的打包统计信息（时间、大小、模块数量）
+**主要能力：**
+- ✍️ **在线代码编辑**: 使用 Monaco Editor 编辑虚拟项目文件（支持语法高亮、代码提示）
+- 📦 **浏览器端打包**: 完全在浏览器中进行 Rspack 打包（无需后端服务器）
+- 🎨 **Vue 3 组件支持**: 自定义 Vue loader 实现 .vue 单文件组件的浏览器端编译
+- ▶️ **即时运行**: 直接在页面中运行打包后的代码
+- 💾 **产物下载**: 支持将打包结果下载为 ZIP 文件
+- 📊 **详细统计**: 实时显示打包时间、产物大小、模块数量等信息
+- 📁 **文件树视图**: 可视化展示虚拟项目的文件结构
+- 🔍 **文件列表**: 查看所有打包生成的文件及其大小
+
+> **⚠️ 架构变更说明**: 
+> 
+> 本项目已从纯 JavaScript 架构升级到 **React + TypeScript** 架构。如果您看到 [AGENTS.md](AGENTS.md) 中提到"纯 JavaScript"、"原生 DOM"等描述，请注意这些是旧版本的说明，当前项目使用 React 18 + TypeScript 5 + UnoCSS 构建。
 
 ## ✨ 特性
 
 - **浏览器端打包**: 使用 `@rspack/browser` 完全在浏览器中进行编译和打包
+- **专业代码编辑器**: 集成 Monaco Editor，提供类似 VS Code 的编辑体验
+- **React + TypeScript**: 使用现代化技术栈构建 UI
+- **UnoCSS 样式**: 原子化 CSS 框架，即时编译样式
 - **Vue 3 支持**: 自定义 Vue loader 实现 .vue 单文件组件的浏览器端编译
 - **内存文件系统**: 使用 `builtinMemFs` 在内存中管理虚拟文件系统
 - **自定义插件系统**: 
@@ -23,16 +33,21 @@
   - `MissingCssFallbackPlugin`: CSS 文件缺失时的降级处理
   - `MissingFileFallbackPlugin`: 通用文件缺失降级
 - **模块化支持**: ES6 模块、动态导入、代码分割
-- **可视化界面**: 美观的 UI 实时显示打包进度和结果
+- **可视化界面**: React 组件化的 UI，实时显示打包进度和结果
 - **产物下载**: 支持将打包结果下载为 ZIP 文件
 - **GitHub Pages 部署**: 内置 COI Service Worker 支持跨域隔离
+- **文件树视图**: 层级显示虚拟项目文件结构
+- **实时编辑**: Monaco Editor 支持语法高亮、代码提示等功能
 
 ## 🛠️ 技术栈
 
 - **@rspack/browser**: 浏览器环境的 Rspack 打包工具（基于 WASM）
-- **Vue 3.5.13**: 用于演示 Vue 组件编译
-- **Vite**: 开发服务器和构建工具
-- **原生 JavaScript**: 主要逻辑使用纯 JS 实现（无框架依赖）
+- **React 18**: UI 框架
+- **TypeScript 5.3.3**: 类型安全的开发体验
+- **Vite 5.0**: 开发服务器和构建工具
+- **UnoCSS**: 原子化 CSS 框架
+- **Monaco Editor**: 专业代码编辑器
+- **Vue 3.5.13**: 虚拟项目使用（用于演示 Vue 组件编译）
 
 ## 📦 安装
 
@@ -57,19 +72,20 @@ pnpm preview
 ## 📝 使用说明
 
 1. **启动项目**: 运行 `pnpm dev` 启动开发服务器（默认端口 3000）
-2. **查看文件**: 所有虚拟项目文件在 `src/files.js` 中定义
-3. **点击打包**: 点击"🔨 打包代码"按钮，Rspack 将在浏览器中编译所有文件
-4. **查看结果**: 
+2. **编辑代码**: 使用集成的 Monaco Editor 编辑虚拟项目文件
+3. **查看文件**: 所有虚拟项目文件在 `src/files.ts` 中定义
+4. **点击打包**: 点击"🔨 打包代码"按钮，Rspack 将在浏览器中编译所有文件
+5. **查看结果**: 
    - 查看打包统计（时间、大小、模块数量）
    - 查看生成的文件列表
    - 下载打包产物为 ZIP
-5. **运行代码**: 点击"▶️ 运行打包结果"直接执行打包后的代码
+6. **运行代码**: 点击"▶️ 运行打包结果"直接执行打包后的代码
 
 ## 💡 示例代码
 
 ### JavaScript 模块示例
 
-在 `src/files.js` 中定义文件：
+在 `src/files.ts` 中定义虚拟项目文件：
 
 ```javascript
 export default {
@@ -133,8 +149,10 @@ export default {
 ```
 rspack-browser-bundling/
 ├── index.html                    # 主 HTML 文件
-├── vite.config.js               # Vite 配置
+├── vite.config.ts               # Vite 配置（TypeScript）
 ├── vite-plugin-coi.js           # COI Service Worker 插件（用于 GitHub Pages）
+├── tsconfig.json                # TypeScript 配置
+├── uno.config.ts                # UnoCSS 配置
 ├── package.json                 # 项目配置
 ├── README.md                    # 项目说明
 ├── AGENTS.md                    # AI Agent 开发指南
@@ -143,8 +161,19 @@ rspack-browser-bundling/
 ├── public/
 │   └── coi-serviceworker.js    # Service Worker（支持 SharedArrayBuffer）
 └── src/
-    ├── main.js                  # 主逻辑（打包和运行）
-    ├── files.js                 # 虚拟文件系统配置
+    ├── main.tsx                 # 主入口（React + TypeScript）
+    ├── files.ts                 # 虚拟文件系统配置
+    ├── types.ts                 # TypeScript 类型定义
+    ├── styles.css               # 全局样式
+    ├── components/              # React 组件
+    │   ├── App.tsx              # 主应用组件
+    │   ├── BuildStats.tsx       # 打包统计组件
+    │   ├── FileList.tsx         # 文件列表组件
+    │   ├── FileTree.tsx         # 文件树组件
+    │   ├── MonacoEditor.tsx     # Monaco 编辑器组件
+    │   └── OperationPanel.tsx   # 操作面板组件
+    ├── utils/
+    │   └── helpers.ts           # 工具函数
     └── rspack/
         ├── loaders/
         │   └── vue/
@@ -176,10 +205,11 @@ rspack-browser-bundling/
 
 ### 虚拟文件系统
 
-- 所有文件定义在 `src/files.js`
+- 所有虚拟项目文件定义在 `src/files.ts`（TypeScript 格式）
 - 使用 `builtinMemFs.volume.fromJSON()` 加载到内存
 - 文件路径必须使用绝对路径（如 `/src/index.js`）
-- 修改文件需要编辑 `files.js` 并重新打包
+- 支持通过 Monaco Editor 在线编辑文件内容
+- 编辑后重新打包即可看到效果
 
 ### Vue 组件支持
 
@@ -253,26 +283,33 @@ console.log('Cross-Origin Isolated:', window.crossOriginIsolated);
 
 ### 技术特色
 
+- **现代化 UI 架构**: 使用 React 18 + TypeScript + UnoCSS 构建
 - **完全离线**: 打包过程不依赖任何服务器
 - **WASM 驱动**: 使用 Rspack 的 WASM 编译器
 - **内存文件系统**: 所有 I/O 操作在内存中完成
 - **Match Resource**: 实现了 Webpack/Rspack 的高级 loader 机制
+- **Monaco Editor 集成**: 专业代码编辑体验
+- **类型安全**: TypeScript 提供完整的类型定义和检查
+- **组件化开发**: React 组件化架构，代码结构清晰
 
 ## 🔨 扩展功能建议
 
-- [ ] 集成 Monaco Editor 代码编辑器
-- [ ] 支持 TypeScript 编译
-- [ ] 添加 React/Solid.js 等其他框架支持
+- [x] 集成 Monaco Editor 代码编辑器 ✅
+- [x] TypeScript 支持 ✅
+- [x] React + TypeScript 架构 ✅
+- [ ] 支持更多文件类型（JSON、CSS、HTML 等）在线编辑
+- [ ] 添加 Solid.js/Svelte 等其他框架支持
 - [ ] 实现代码模板和示例库
-- [ ] 添加打包优化选项（minify、tree-shaking 等）
+- [ ] 添加打包优化选项配置界面
 - [ ] 支持从 URL/GitHub 导入项目
 - [ ] 实现协作编辑功能
 - [ ] 添加性能分析面板
+- [ ] 支持多文件下载/上传
 
 ## 📚 相关文档
 
 ### 项目文档
-- [AGENTS.md](AGENTS.md) - AI 开发助手指南
+- [AGENTS.md](AGENTS.md) - AI 开发助手指南（⚠️ 注意：文档中描述的是旧版纯 JS 架构，当前已升级为 React + TypeScript）
 - [VUE_BROWSER_GUIDE.md](VUE_BROWSER_GUIDE.md) - Vue 浏览器环境使用指南
 - [MATCH_RESOURCE_EXPLAINED.md](MATCH_RESOURCE_EXPLAINED.md) - Match Resource 机制详解
 - [src/rspack/loaders/vue/README.md](src/rspack/loaders/vue/README.md) - Vue Loader 实现细节
@@ -295,10 +332,12 @@ ISC
 
 ### 开发建议
 
-1. 阅读 [AGENTS.md](AGENTS.md) 了解项目架构和编码规范
-2. 遵循现有的代码风格（ES Modules、箭头函数等）
-3. 为新功能添加文档和示例
-4. 测试在不同浏览器中的兼容性
+1. 阅读 [AGENTS.md](AGENTS.md) 了解项目架构（⚠️ 注意：文档描述的是旧版纯 JS 架构）
+2. 实际项目使用 **React + TypeScript + UnoCSS** 技术栈
+3. 主要组件位于 `src/components/` 目录
+4. 遵循 TypeScript 类型安全实践
+5. 为新功能添加文档和示例
+6. 测试在不同浏览器中的兼容性
 
 ## 📄 许可证
 

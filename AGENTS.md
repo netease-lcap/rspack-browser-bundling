@@ -1,13 +1,13 @@
 # AGENTS.md - AI Coding Agent Guidelines
 
-This document provides comprehensive guidelines for AI coding agents working in the **rspack-browser-demo** repository. This is a proof-of-concept project demonstrating Rspack bundling entirely in the browser using `@rspack/browser`.
+This document provides comprehensive guidelines for AI coding agents working in the **rspack-browser-bundling** repository. This is a proof-of-concept project demonstrating Rspack bundling entirely in the browser using `@rspack/browser`.
 
 ---
 
-## 🏗️ Build, Dev & Preview Commands
+## 🏗️ Build, Dev & Test Commands
 
 ```bash
-# Start development server (Vite on port 3000)
+# Start development server (Vite on port 3000, auto-opens browser)
 pnpm dev
 
 # Build for production
@@ -17,23 +17,34 @@ pnpm build
 pnpm preview
 ```
 
-**Note**: This project has **no linting, testing, or TypeScript compilation scripts**. It's a minimal demo focused on browser-based bundling capabilities.
+**Note**: This project has **no linting or testing scripts**. It's a demo project focused on showcasing browser-based bundling capabilities. TypeScript is configured for type checking only (`noEmit: true`).
 
 ---
 
 ## 📦 Project Structure
 
 ```
-rspack-browser-demo/
+rspack-browser-bundling/
 ├── index.html              # Main HTML entry point
-├── vite.config.js          # Vite build configuration
+├── vite.config.ts          # Vite build configuration (TypeScript)
+├── tsconfig.json           # TypeScript compiler options
+├── uno.config.ts           # UnoCSS styling configuration
 ├── package.json            # Dependencies and scripts
 └── src/
-    ├── main.js             # Main application logic (551 lines)
-    ├── files.js            # Virtual file system definitions
-    └── rspack/
-        ├── loaders/vue/    # Custom Vue loader for browser
-        └── plugins/        # Custom Rspack plugins
+    ├── main.tsx            # React app entry point
+    ├── types.ts            # TypeScript type definitions
+    ├── files.ts            # Virtual file system data
+    ├── utils/
+    │   └── helpers.ts      # Utility functions
+    ├── components/         # React components (TypeScript + JSX)
+    │   ├── App.tsx         # Main application (493 lines)
+    │   ├── MonacoEditor.tsx
+    │   ├── FileTree.tsx
+    │   ├── OperationPanel.tsx
+    │   └── ...
+    └── rspack/             # Custom loaders/plugins (JavaScript)
+        ├── loaders/vue/
+        └── plugins/
             ├── lcap/
             ├── missing-css-fallback/
             └── missing-file-fallback/
@@ -44,132 +55,160 @@ rspack-browser-demo/
 ## 🎯 Project Context
 
 ### Purpose
-- **Browser-based bundling**: Runs Rspack compiler entirely in browser environment
-- **Virtual file system**: All files stored in memory using `builtinMemFs`
+- **Browser-based bundling**: Runs Rspack compiler entirely in browser using WebAssembly
+- **Virtual file system**: All files stored in memory using `builtinMemFs` from `@rspack/browser`
+- **React + TypeScript UI**: Professional code editor interface with Monaco Editor
 - **Custom loaders/plugins**: Demonstrates extensibility of Rspack browser API
-- **Vue SFC compilation**: Compiles Vue components in browser without build step
+- **Vue SFC compilation**: Compiles Vue components in browser (demo feature, not for the UI)
 
 ### Key Technologies
-- **Build Tool**: Vite (for demo development) + `@rspack/browser` (for in-browser bundling)
-- **Package Manager**: pnpm
+- **Framework**: React 18 with TypeScript 5.3.3
+- **Build Tool**: Vite 5.0 (dev server) + `@rspack/browser` (in-browser bundling)
+- **Styling**: UnoCSS with atomic CSS utilities
+- **Editor**: Monaco Editor (VS Code editor engine)
+- **Package Manager**: pnpm (required)
 - **Module System**: ES Modules exclusively (`"type": "module"`)
-- **Language**: Pure JavaScript (no TypeScript)
-- **Framework**: Vue 3.5.13
+- **Bundler**: `@rspack/browser` 1.0.0 (browser-compatible Rspack via WASM)
 
 ---
 
 ## 📝 Code Style Guidelines
 
-### Import Conventions
+### TypeScript & Type Safety
 
-**Always use ES Modules** - No CommonJS in source files:
-```javascript
-// ✅ Good - Named imports from external packages
-import { rspack, builtinMemFs, BrowserRequirePlugin } from '@rspack/browser';
+**Always use explicit types** for function parameters and return values:
+```typescript
+// ✅ Good - Explicit types
+export function formatBytes(bytes: number): string { ... }
+function handleFileSelect(path: string): void { ... }
 
-// ✅ Good - Default imports for custom modules
-import LcapPlugin from './rspack/plugins/lcap';
-import files from './files';
+// ✅ Use type imports
+import type { FileSystem, BuildStats, MonacoEditorInstance } from '../types'
 
-// ❌ Bad - No CommonJS
-const rspack = require('@rspack/browser');
+// ✅ Define interfaces for complex objects
+interface MonacoEditorProps {
+  currentFile: string | null
+  files: FileSystem
+  onSave: (path: string, content: string) => void
+}
+
+// ❌ Avoid 'any' unless absolutely necessary
+const data: any = {} // Bad
 ```
 
-**Prefer named imports** for external libraries, **default exports** for custom classes/plugins.
+### React Component Patterns
+
+```typescript
+// ✅ Functional components with TypeScript
+const MonacoEditor: React.FC<MonacoEditorProps> = ({ currentFile, files, onSave }) => {
+  // Component logic
+}
+
+// ✅ Use forwardRef for component refs
+const MonacoEditor = forwardRef<MonacoEditorInstance, MonacoEditorProps>(
+  ({ currentFile, files, onSave }, ref) => {
+    // ...
+  }
+)
+
+// ✅ useCallback for event handlers to prevent re-renders
+const handleFileSelect = useCallback((path: string) => {
+  setCurrentFile(path)
+}, [])
+
+// ✅ useState with explicit types
+const [files, setFiles] = useState<FileSystem>({ ...filesData })
+const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+```
+
+### Import Conventions
+
+```typescript
+// ✅ React imports first
+import React, { useState, useCallback, useRef } from 'react'
+import { createRoot } from 'react-dom/client'
+
+// ✅ Third-party imports
+import { rspack, builtinMemFs } from '@rspack/browser'
+import Editor from '@monaco-editor/react'
+
+// ✅ Local component imports
+import FileTree from './FileTree'
+import MonacoEditor from './MonacoEditor'
+
+// ✅ Type imports (separate or inline)
+import type { FileSystem, BuildStats } from '../types'
+
+// ✅ Asset imports last
+import './styles.css'
+```
 
 ### Naming Conventions
 
-```javascript
-// ✅ camelCase for variables and functions
-let bundledCode = null;
-function formatBytes(bytes) { ... }
+```typescript
+// ✅ PascalCase for components, types, interfaces
+interface FileTreeNode { ... }
+type MessageType = 'success' | 'error'
+const App: React.FC = () => { ... }
 
-// ✅ PascalCase for classes and plugin names
-class MissingFileFallbackPlugin { ... }
-export default class CustomVueLoader { ... }
+// ✅ camelCase for variables, functions, props
+const [currentFile, setCurrentFile] = useState<string | null>(null)
+function formatBytes(bytes: number): string { ... }
 
-// ✅ Double-underscore prefix for private/internal methods
-__getOrCreateDataSource() { ... }
+// ✅ UPPER_CASE for constants
+const MAX_FILE_SIZE = 1024 * 1024
 
-// ✅ kebab-case for DOM element IDs
-const bundleBtn = document.getElementById('bundle-btn');
-```
-
-### Function Style
-
-```javascript
-// ✅ Arrow functions for callbacks and utilities
-const formatBytes = (bytes) => {
-  if (bytes === 0) return '0 Bytes';
-  // ...
-};
-
-// ✅ Traditional functions for main logic
-function showMessage(message, type = 'success') {
-  messageEl.innerHTML = `<div class="${type}">${message}</div>`;
-}
-
-// ✅ Async/await for asynchronous operations
-async function bundleCode() {
-  try {
-    await compiler.run();
-  } catch (error) {
-    console.error('打包错误:', error);
-  }
-}
-
-// ✅ Default parameters
-constructor(options = {}) {
-  this.options = { files: [], ...options };
-}
+// ✅ kebab-case for CSS classes (UnoCSS)
+<div className="flex h-screen w-screen flex-col overflow-hidden">
 ```
 
 ### Error Handling
 
-**Use try-catch-finally** for critical operations:
-```javascript
+**Use try-catch-finally** with proper typing:
+```typescript
 try {
-  const stats = await compiler.run();
+  const stats = await compiler.run()
   // Process results
-} catch (error) {
-  console.error('打包错误:', error);
-  outputEl.textContent = '打包失败\n\n' + error.message;
-  showMessage('❌ 打包失败', 'error');
+} catch (error: any) {  // or (error: unknown) with type narrowing
+  console.error('打包错误:', error)
+  setBuildOutput('打包失败\n\n' + error.message)
+  showMessage('❌ 打包失败: ' + error.message, 'error')
 } finally {
-  bundleBtn.disabled = false;
+  setIsBundling(false)
 }
 ```
 
-**Graceful degradation** - log errors but don't crash:
-```javascript
-try {
-  const resolvedPath = resolver.resolveSync(null, context, request);
-  if (!fs.existsSync(resolvedPath)) {
-    throw new Error('File not found');
-  }
-} catch (e) {
-  console.log(`[Plugin] file not found: ${request}, using fallback`);
-  resource.request = fallbackFilesFn(request);
-}
+### UnoCSS Styling
+
+**Use atomic utility classes** instead of custom CSS:
+```typescript
+// ✅ Good - UnoCSS utilities
+<div className="flex flex-col h-full overflow-hidden">
+<button className="btn-primary px-4 py-2 rounded">
+
+// ✅ Use shortcuts defined in uno.config.ts
+<button className="btn-primary">  // Expands to predefined classes
+
+// ❌ Avoid inline styles
+<div style={{ display: 'flex' }}>
 ```
 
-### Comments & Documentation
+### Comments
 
-```javascript
+```typescript
 /**
- * JSDoc-style for functions (Chinese is acceptable)
+ * JSDoc for exported functions (Chinese/English both OK)
  */
-async function bundleCode() { ... }
+export function formatBytes(bytes: number): string { ... }
 
-// Inline comments for business logic
+// Inline comments for complex logic
 // 从内存文件系统读取打包结果
-const distFiles = builtinMemFs.volume.toJSON('/dist');
+const distFiles = builtinMemFs.volume.toJSON('/dist')
 
-/* Block comments for major sections */
-/* Vue Component compiled by browser vue-loader */
+// Component section comments
+{/* 顶部标题栏 */}
+{/* 左侧文件树 */}
 ```
-
-**Language**: Both Chinese and English comments are acceptable. This codebase uses Chinese extensively.
 
 ---
 
@@ -269,15 +308,9 @@ const config = {
 
 ### Don't Add Testing Infrastructure
 This is a demo project with **no tests**. Don't add:
-- Test files (`.test.js`, `.spec.js`)
+- Test files (`.test.ts`, `.spec.tsx`)
 - Test configuration (Jest, Vitest)
 - Test utilities or mocks
-
-### Don't Add TypeScript
-This project uses **pure JavaScript**:
-- No `.ts` files in src/
-- No `tsconfig.json`
-- No TypeScript compilation
 
 ### Don't Add Linting/Formatting Configs
 No ESLint or Prettier:
