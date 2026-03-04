@@ -363,9 +363,11 @@ try {
 
 This repository has **excellent documentation**:
 - **README.md**: Chinese documentation with usage examples
-- **MATCH_RESOURCE_EXPLAINED.md**: Technical deep-dive into loader mechanisms
-- **VUE_BROWSER_GUIDE.md**: Guide for Vue in browser environment
-- **Plugin READMEs**: Each plugin has detailed documentation
+- **docs/**: Complete documentation center
+  - **guides/MATCH_RESOURCE_EXPLAINED.md**: Technical deep-dive into loader mechanisms
+  - **guides/VUE_BROWSER_GUIDE.md**: Guide for Vue in browser environment
+  - **loaders/**: Loader implementation docs
+  - **plugins/**: Plugin implementation docs
 
 **When adding features**: Include README.md in the plugin/loader directory explaining:
 - Purpose and use case
@@ -401,10 +403,10 @@ This repository has **excellent documentation**:
 ## 🎓 Learning Resources
 
 Refer to these docs when working on specific features:
-- **Vue loader**: `src/rspack/loaders/vue/README.md`
-- **Match resource**: `MATCH_RESOURCE_EXPLAINED.md`
-- **LCAP plugin**: `src/rspack/plugins/lcap/README.md` (if exists)
-- **Browser Vue guide**: `VUE_BROWSER_GUIDE.md`
+- **Vue loader**: `docs/loaders/vue-loader.md`
+- **Match resource**: `docs/guides/MATCH_RESOURCE_EXPLAINED.md`
+- **Browser Vue guide**: `docs/guides/VUE_BROWSER_GUIDE.md`
+- **Rspack bundler**: `docs/api/RSPACK_BUNDLER.md`
 
 ---
 

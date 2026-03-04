@@ -156,8 +156,12 @@ rspack-browser-bundling/
 ├── package.json                 # 项目配置
 ├── README.md                    # 项目说明
 ├── AGENTS.md                    # AI Agent 开发指南
-├── MATCH_RESOURCE_EXPLAINED.md  # Match Resource 机制详解
-├── VUE_BROWSER_GUIDE.md         # Vue 浏览器环境使用指南
+├── docs/                        # 📚 文档中心
+│   ├── README.md                # 文档索引
+│   ├── guides/                  # 指南文档
+│   ├── api/                     # API 文档
+│   ├── loaders/                 # Loader 文档
+│   └── plugins/                 # Plugin 文档
 ├── public/
 │   └── coi-serviceworker.js    # Service Worker（支持 SharedArrayBuffer）
 └── src/
@@ -177,9 +181,7 @@ rspack-browser-bundling/
     └── rspack/
         ├── loaders/
         │   └── vue/
-        │       ├── index.js         # 自定义 Vue loader
-        │       ├── README.md        # Vue loader 文档
-        │       └── STYLE_HANDLING.md # 样式处理说明
+        │       └── index.js         # 自定义 Vue loader
         └── plugins/
             ├── lcap/
             │   ├── index.js         # LCAP 插件（chunk map 和懒加载）
@@ -218,7 +220,7 @@ rspack-browser-bundling/
 - 支持 `<template>`、`<script>`、`<script setup>`、`<style scoped>`
 - 使用 `vue/compiler-sfc` 进行编译
 - 通过 match resource 机制实现正确的 loader 链
-- 详见 [VUE_BROWSER_GUIDE.md](VUE_BROWSER_GUIDE.md) 和 [MATCH_RESOURCE_EXPLAINED.md](MATCH_RESOURCE_EXPLAINED.md)
+- 详见 [Vue 浏览器环境使用指南](docs/guides/VUE_BROWSER_GUIDE.md) 和 [Match Resource 机制详解](docs/guides/MATCH_RESOURCE_EXPLAINED.md)
 
 ## 🌐 GitHub Pages 部署
 
@@ -309,11 +311,21 @@ console.log('Cross-Origin Isolated:', window.crossOriginIsolated);
 ## 📚 相关文档
 
 ### 项目文档
+- **[📖 文档中心](docs/README.md)** - 完整的文档索引和导航
 - [AGENTS.md](AGENTS.md) - AI 开发助手指南（⚠️ 注意：文档中描述的是旧版纯 JS 架构，当前已升级为 React + TypeScript）
-- [VUE_BROWSER_GUIDE.md](VUE_BROWSER_GUIDE.md) - Vue 浏览器环境使用指南
-- [MATCH_RESOURCE_EXPLAINED.md](MATCH_RESOURCE_EXPLAINED.md) - Match Resource 机制详解
-- [src/rspack/loaders/vue/README.md](src/rspack/loaders/vue/README.md) - Vue Loader 实现细节
-- [src/rspack/loaders/vue/STYLE_HANDLING.md](src/rspack/loaders/vue/STYLE_HANDLING.md) - 样式处理说明
+
+### 核心指南
+- [Match Resource 机制详解](docs/guides/MATCH_RESOURCE_EXPLAINED.md) - 深入理解 loader 工作原理
+- [Vue 浏览器环境使用指南](docs/guides/VUE_BROWSER_GUIDE.md) - 浏览器端 Vue 编译指南
+- [重构日志](docs/guides/REFACTOR_LOG.md) - 项目重构记录
+
+### API 和工具
+- [Rspack 打包工具](docs/api/RSPACK_BUNDLER.md) - 打包工具 API 文档
+
+### Loaders 和 Plugins
+- [Vue Loader 实现](docs/loaders/vue-loader.md) - 自定义 Vue loader 详解
+- [Vue 样式处理](docs/loaders/vue-style-handling.md) - 样式处理说明
+- [Missing CSS Fallback Plugin](docs/plugins/missing-css-fallback.md) - CSS 降级插件
 
 ### 外部资源
 - [Rspack 官方文档](https://www.rspack.dev/)
