@@ -42,12 +42,7 @@ function prepareVirtualFiles(files: FileSystem): FileSystem {
   
   // 添加必要的 loader 文件
   preparedFiles['/LOADER/rspack-vue-loader.js'] = '';
-  
-  // 添加 App.vue.ts 占位文件（如果需要）
-  if (!preparedFiles['/src/App.vue.ts']) {
-    preparedFiles['/src/App.vue.ts'] = 'console.log("Hello from App.vue");';
-  }
-  
+
   return preparedFiles;
 }
 
