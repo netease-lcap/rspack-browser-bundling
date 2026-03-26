@@ -31,6 +31,13 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
-    minify: true
+    minify: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'files': ['./src/files.ts']
+        }
+      }
+    }
   }
 })
