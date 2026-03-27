@@ -142,7 +142,7 @@ function createRspackConfig(files: FileSystem) {
         inject: 'body',
       }),
       new LcapPlugin({
-        isDev: false,
+        isDev: true,
         isIncremental: false,
         lastResource: {
           chunksMap: '',
@@ -157,7 +157,7 @@ function createRspackConfig(files: FileSystem) {
         pattern: /\/dist-theme\/index\.css$/,
         fallbackContent: '/* CSS theme file not found, using empty fallback */',
       }),
-      new MissingFileFallbackPlugin(),
+      // new MissingFileFallbackPlugin(),
       new BrowserRequirePlugin({
         modules: {
           '/LOADER/rspack-vue-loader.js': CustomVueLoader,

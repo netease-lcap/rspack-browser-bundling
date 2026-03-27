@@ -1,7 +1,7 @@
-import { rspack, HtmlRspackPlugin } from '@rspack/browser';
-import lazyLoadCode from './constant';
+import { rspack, HtmlRspackPlugin } from "@rspack/browser";
+import lazyLoadCode from "./constant";
 
-const plugin = 'lcap-plugin';
+const plugin = "lcap-plugin";
 
 export default class LcapPlugin {
   constructor(options) {
@@ -41,34 +41,23 @@ function overrideRuntime(compiler, options) {
     return;
   }
 
-  const { RuntimeModule, RuntimeGlobals } = compiler.webpack;
+  const { RuntimeGlobals } = compiler.webpack;
 
   // 复写__webpack_require__.k和__webpack_require__.u
-  class OverrideRuntimeModule extends RuntimeModule {
-    constructor() {
-      super('override');
-    }
-
-    generate() {
-      return `// override
-      __webpack_require__.k = (chunkId) => {
-        return "" + window.lcapChunksNameMap[chunkId] + "." + window.lcapChunksHashMap[chunkId] + ".css"
-      }
-      // override
-      __webpack_require__.u = (chunkId) => {
+  compiler.hooks.compilation.tap(plugin, (compilation) => {
+    compilation.hooks.runtimeModule.tap(plugin, (module, chunk) => {
+      if (module.name === "get javascript chunk filename" && chunk.name === "runtime") {
+        module.source.source = `${RuntimeGlobals.getChunkScriptFilename} = (chunkId) => {
         return "" + window.lcapChunksNameMap[chunkId] + "." + window.lcapChunksHashMap[chunkId] + ".js"
-      }`;
-    }
-  }
+      }\n`
+      }
 
-  compiler.hooks.thisCompilation.tap(plugin, (compilation) => {
-    compilation.hooks.runtimeRequirementInTree
-      .for(RuntimeGlobals.ensureChunkHandlers)
-      .tap(plugin, (chunk) => {
-        if (chunk.name === 'runtime') {
-          compilation.addRuntimeModule(chunk, new OverrideRuntimeModule());
-        }
-      });
+      if (module.name === "get css chunk filename" && chunk.name === "runtime") {
+        module.source.source = `${RuntimeGlobals.getChunkCssFilename} = (chunkId) => {
+        return "" + window.lcapChunksNameMap[chunkId] + "." + window.lcapChunksHashMap[chunkId] + ".css"
+      }\n`
+      }
+    });
   });
 }
 
@@ -84,14 +73,10 @@ function emitChunksMapResource(compiler, options) {
     // 2、增加router.min.js asset
     const ChunksNameMap = {};
     const ChunksHashMap = {};
-    const statsJson = compilation.getStats().toJson({
-      warnings: false,
-      modules: false,
-    });
 
-    statsJson.chunks.forEach(chunk => {
+    compilation.chunks.forEach((chunk) => {
       const chunkId = chunk.id;
-      const chunkName = chunk.names[0];
+      const chunkName = chunk.name;
       const chunkHash = chunk.hash.substring(0, 8);
 
       ChunksNameMap[chunkId] = chunkName || chunkId;
@@ -112,33 +97,33 @@ lcap_changed_chunks.forEach(item => {
   window.lcapChunksHashMap[item.id] = item.hash;
 });`;
 
-    compilation.emitAsset('router.min.js', new RawSource(code), { minimized: true })
+    compilation.emitAsset("router.min.js", new RawSource(code), {
+      minimized: true,
+    });
 
     callback();
-  })
+  });
 }
 
 // 生成client.js
 function emitClientResource(compiler, options) {
   const { isDev, extra } = options;
-  compiler.hooks.compilation.tap(plugin, compilation => {
-      HtmlRspackPlugin.getCompilationHooks(compilation).beforeAssetTagGeneration.tapPromise(plugin, async data => {
-        const { assets } = data;
-        const { publicPath, js, css } = assets;
+  compiler.hooks.compilation.tap(plugin, (compilation) => {
+    HtmlRspackPlugin.getCompilationHooks(
+      compilation,
+    ).beforeAssetTagGeneration.tapPromise(plugin, async (data) => {
+      const { assets } = data;
+      const { publicPath, js, css } = assets;
 
-        const allJS = [
-          ...(extra.preJS || []),
-          ...js,
-          ...(extra.postJS || []),
-        ];
+      const allJS = [...(extra.preJS || []), ...js, ...(extra.postJS || [])];
 
-        const allCSS = [
-          ...(extra.preCSS || []),
-          ...css,
-          ...(extra.postCSS || []),
-        ];
+      const allCSS = [
+        ...(extra.preCSS || []),
+        ...css,
+        ...(extra.postCSS || []),
+      ];
 
-        const clientCode = `(function() {
+      const clientCode = `(function() {
           ${lazyLoadCode}
 
           function loadAssets() {
@@ -154,16 +139,18 @@ function emitClientResource(compiler, options) {
 
           ${extra.entryCode}
         })();
-        `
-      
-        // 浏览器环境兼容：RawSource 直接支持字符串
-        const source =  new compiler.webpack.sources.RawSource(clientCode, { minimized: true });
-        compilation.emitAsset('client.js', source);
+        `;
 
-        data.assets.js = [`${publicPath}client.js?t=${Date.now()}`];
-        data.assets.css = [];
+      // 浏览器环境兼容：RawSource 直接支持字符串
+      const source = new compiler.webpack.sources.RawSource(clientCode, {
+        minimized: true,
       });
+      compilation.emitAsset("client.js", source);
+
+      data.assets.js = [`${publicPath}client.js?t=${Date.now()}`];
+      data.assets.css = [];
     });
+  });
 }
 
 // 增量构建
@@ -172,44 +159,44 @@ function addIncrementalBuild(compiler, options) {
   const { chunksMap: chunksMapCode } = lastResource;
 
   compiler.hooks.emit.tapAsync(plugin, (compilation, callback) => {
-    const statsJson = compilation.getStats().toJson({
-      warnings: false,
-      modules: false,
-    });
-
     // 只保留pages相关的chunk 资源
     const pagesAssets = [];
     const changedChunks = [];
 
-    statsJson.chunks.filter(chunk => {
-      if (chunk.idHints?.includes('page')) {
-        pagesAssets.push(...chunk.files);
+    compilation.chunks.forEach((chunk) => {
+      if (chunk.idHints?.has("page")) {
+        chunk.files.forEach((file) => pagesAssets.push(file));
         changedChunks.push({
           id: chunk.id,
-          name: chunk.names[0] || chunk.id,
+          name: chunk.name || chunk.id,
           hash: chunk.hash.substring(0, 8),
         });
       }
     });
 
     // 删除不需要的chunk(非页面相关的chunk)
-    statsJson.assets.forEach(asset => {
+    compilation.getAssets().forEach((asset) => {
       if (!pagesAssets.includes(asset.name)) {
         compilation.deleteAsset(asset.name);
       }
-    })
+    });
 
     // 生成增量变更的chunks-map.js
     let code = chunksMapCode;
 
-    const placeholderIdx = code.indexOf('// lcap_changed_chunks placeholder');
+    const placeholderIdx = code.indexOf("// lcap_changed_chunks placeholder");
     // 前面插入代码
     if (placeholderIdx !== -1) {
-      code = code.slice(0, placeholderIdx) + `lcap_changed_chunks.push(...${JSON.stringify(changedChunks)});\n` + code.slice(placeholderIdx);
+      code =
+        code.slice(0, placeholderIdx) +
+        `lcap_changed_chunks.push(...${JSON.stringify(changedChunks)});\n` +
+        code.slice(placeholderIdx);
     }
 
     const { RawSource } = compiler.webpack.sources;
-    compilation.emitAsset('router.min.js', new RawSource(code), { minimized: true })
+    compilation.emitAsset("router.min.js", new RawSource(code), {
+      minimized: true,
+    });
 
     callback();
   });
