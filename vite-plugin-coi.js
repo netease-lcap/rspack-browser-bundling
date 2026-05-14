@@ -19,8 +19,12 @@ export default function vitePluginCOI() {
       config = resolvedConfig
     },
     
-    // 在 HTML 中注入 Service Worker 脚本
-    transformIndexHtml() {
+    // 仅在生产构建时注入 Service Worker 脚本（开发环境通过 dev server headers 实现隔离）
+    transformIndexHtml(html, ctx) {
+      if (ctx.server) {
+        // 开发模式：dev server 已直接设置 COOP/COEP headers，无需 SW
+        return []
+      }
       return [
         {
           tag: 'script',
@@ -32,7 +36,7 @@ export default function vitePluginCOI() {
       ]
     },
     
-    // 开发模式：配置服务器 headers
+    // 开发模式：直接通过 Vite dev server 设置 COOP/COEP headers，无需 Service Worker
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp')
