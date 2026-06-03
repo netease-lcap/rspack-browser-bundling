@@ -1,221 +1,294 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react'
 
-import FileTree from './FileTree';
-import MonacoEditor from './MonacoEditor';
-import OperationPanel from './OperationPanel';
+import FileTree from './FileTree'
+import MonacoEditor from './MonacoEditor'
+import OperationPanel from './OperationPanel'
 
-import filesData from '../files';
-import { bundleWithRspack } from '../utils/rspack-bundler';
-import type { FileSystem, BuildStats, MonacoEditorInstance } from '../types';
+import filesData from '../files'
+import { useHMR } from '../hooks/useHMR'
+import { HmrServer, HmrClient } from '../hmr/HmrServer'
+import type { FileSystem, BuildStats, MonacoEditorInstance } from '../types'
+import type { BuildEndPayload, HMRUpdatePayload } from '../types/hmr'
 
 const App: React.FC = () => {
-  // 状态管理
-  const [files, setFiles] = useState<FileSystem>({ ...filesData });
-  const [currentFile, setCurrentFile] = useState<string | null>(null);
-  const [distFiles, setDistFiles] = useState<Record<string, string> | null>(null);
-  const [buildStats, setBuildStats] = useState<BuildStats | null>(null);
-  const [buildOutput, setBuildOutput] = useState<string>('');
-  const [runOutput, setRunOutput] = useState<string>('');
-  const [isRunOutputVisible, setIsRunOutputVisible] = useState<boolean>(false);
-  const [isBundling, setIsBundling] = useState<boolean>(false);
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [files, setFiles] = useState<FileSystem>({ ...filesData })
+  const [currentFile, setCurrentFile] = useState<string | null>(null)
+  const [distFiles, setDistFiles] = useState<Record<string, string> | null>(null)
+  const [buildStats, setBuildStats] = useState<BuildStats | null>(null)
+  const [runOutput, setRunOutput] = useState<string>('')
+  const [isRunOutputVisible, setIsRunOutputVisible] = useState<boolean>(false)
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
-  // Refs
-  const editorRef = useRef<MonacoEditorInstance | null>(null);
+  const editorRef = useRef<MonacoEditorInstance | null>(null)
+  const previewIframeRef = useRef<HTMLIFrameElement | null>(null)
+  const hmrServerRef = useRef<HmrServer | null>(null)
+  const hmrClientRef = useRef<HmrClient | null>(null)
 
-  // 显示消息
-  const showMessage = useCallback((text: string, type: 'success' | 'error' = 'success') => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage(null), 5000);
-  }, []);
+  const [isPreviewVisible, setIsPreviewVisible] = useState<boolean>(false)
+  const [previewKey, setPreviewKey] = useState<number>(0)
+  const [isSwReady, setIsSwReady] = useState<boolean>(false)
+  const [isHmrConnected, setIsHmrConnected] = useState<boolean>(false)
+  const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null)
 
-  // 处理文件选择
-  const handleFileSelect = useCallback((path: string) => {
-    setCurrentFile(path);
-  }, []);
+  const handleBuildEnd = useCallback((result: BuildEndPayload) => {
+    console.log('[App] Build end, files:', Object.keys(result.distFiles))
+    setDistFiles(result.distFiles)
 
-  // 处理文件保存
-  const handleFileSave = useCallback((path: string, content: string) => {
-    setFiles((prev) => ({
-      ...prev,
-      [path]: content,
-    }));
-    showMessage(`✅ 已保存: ${path}`, 'success');
-  }, [showMessage]);
+    if (hmrServerRef.current && isHmrConnected) {
+      hmrServerRef.current.notifyBuilt(result.hash)
+    }
+  }, [isHmrConnected])
 
-  // 打包代码
-  const handleBundle = useCallback(async () => {
-    setIsBundling(true);
-    setBuildOutput('正在打包...');
-    setBuildStats(null);
-    setDistFiles(null);
-    setMessage(null);
+  const handleHMRUpdate = useCallback((update: HMRUpdatePayload) => {
+    console.log('[App] HMR update:', update)
+    
+    if (hmrServerRef.current && isHmrConnected) {
+      hmrServerRef.current.sendUpdate(update)
+    }
+  }, [isHmrConnected])
 
-    try {
-      // 使用 rspack-bundler 工具进行打包
-      const result = await bundleWithRspack({
-        files,
-        onProgress: (message) => {
-          setBuildOutput(message);
+  const {
+    status: hmrStatus,
+    isWatchMode,
+    isCompiling,
+    startWatch,
+    stopWatch,
+    updateFile,
+  } = useHMR({
+    initialFiles: files,
+    autoStart: false,
+    config: {
+      mode: 'development',
+      enableHMR: true,
+      enableReactRefresh: true,
+    },
+    onBuildEnd: handleBuildEnd,
+    onHMRUpdate: handleHMRUpdate,
+  })
+
+  useEffect(() => {
+    if (!hmrServerRef.current) {
+      hmrServerRef.current = new HmrServer({
+        onSubscribe: (path, client) => {
+          console.log('[App] HMR client subscribed:', path, client.id)
         },
-      });
-
-      // 更新状态
-      setDistFiles(result.distFiles);
-      setBuildStats(result.buildStats);
-      setBuildOutput(result.bundledCode);
-
-      // 将 dist 文件添加到文件系统（用于文件树显示）
-      setFiles((prev) => ({
-        ...prev,
-        ...result.distFiles,
-      }));
-
-      showMessage('✅ 打包成功！', 'success');
-    } catch (error: any) {
-      console.error('打包错误:', error);
-      setBuildOutput('打包失败\n\n' + error.message + '\n\n' + (error.stack || ''));
-      showMessage('❌ 打包失败: ' + error.message, 'error');
-    } finally {
-      setIsBundling(false);
-    }
-  }, [files, showMessage]);
-
-  // 运行打包后的代码
-  const handleRun = useCallback(() => {
-    if (!buildOutput || !distFiles) {
-      showMessage('❌ 没有可运行的代码，请先打包', 'error');
-      return;
+        onUnsubscribe: (path, client) => {
+          console.log('[App] HMR client unsubscribed:', path, client.id)
+        },
+      })
     }
 
-    setIsRunOutputVisible(true);
-    setRunOutput('正在运行...\n');
-
-    // 捕获 console 输出
-    const originalLog = console.log;
-    const originalError = console.error;
-    const logs: string[] = [];
-
-    console.log = (...args: any[]) => {
-      logs.push(
-        '[LOG] ' +
-          args
-            .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
-            .join(' ')
-      );
-      originalLog.apply(console, args);
-    };
-
-    console.error = (...args: any[]) => {
-      logs.push(
-        '[ERROR] ' +
-          args
-            .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
-            .join(' ')
-      );
-      originalError.apply(console, args);
-    };
-
-    try {
-      const result = eval(buildOutput);
-      logs.push(
-        '\n[RESULT] ' + (typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result))
-      );
-      setRunOutput(logs.join('\n'));
-      showMessage('✅ 代码运行成功！', 'success');
-    } catch (error: any) {
-      logs.push('\n[RUNTIME ERROR] ' + error.message + '\n' + error.stack);
-      setRunOutput(logs.join('\n'));
-      showMessage('❌ 运行错误: ' + error.message, 'error');
-    } finally {
-      console.log = originalLog;
-      console.error = originalError;
+    return () => {
+      hmrServerRef.current?.dispose()
+      hmrServerRef.current = null
     }
-  }, [buildOutput, distFiles, showMessage]);
+  }, [])
 
-  // 下载产物
-  const handleDownload = useCallback(async () => {
-    if (!distFiles) {
-      showMessage('❌ 没有可下载的产物，请先打包', 'error');
-      return;
-    }
+  const messagePortRef = useRef<MessagePort | null>(null)
+  const distFilesRef = useRef<Record<string, string> | null>(null)
 
-    try {
-      const fileEntries = Object.entries(distFiles);
-      const fileCount = fileEntries.length;
+  useEffect(() => {
+    distFilesRef.current = distFiles
+  }, [distFiles])
 
-      console.log(`准备下载 ${fileCount} 个文件:`, fileEntries.map(([path]) => path));
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(async (registration) => {
+          swRegistrationRef.current = registration
+          
+          await navigator.serviceWorker.ready
+          
+          if (!navigator.serviceWorker.controller) {
+            console.log('[App] Waiting for SW to take control...')
+            await new Promise<void>((resolve) => {
+              navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true })
+            })
+          }
+          
+          console.log('[App] SW is now controlling, initializing MessagePort')
+          const channel = new MessageChannel()
+          messagePortRef.current = channel.port1
 
-      if (fileCount === 1) {
-        const [path, content] = fileEntries[0];
-        const filename = path.split('/').pop() || 'output.js';
-        const blob = new Blob([content], { type: 'application/octet-stream' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showMessage(`✅ 文件已下载: ${filename}`, 'success');
-      } else {
-        let downloaded = 0;
-
-        for (const [path, content] of fileEntries) {
-          const filename = path.replace('/dist/', '');
-
-          if (downloaded > 0) {
-            await new Promise((resolve) => setTimeout(resolve, 300));
+          channel.port1.onmessage = (event) => {
+            const { type, payload } = event.data
+            if (type === 'GET_BUILD_FILE') {
+              const filePath = payload?.path as string
+              const requestId = payload?.requestId as number
+              console.log('[App] Received GET_BUILD_FILE for:', filePath)
+              const currentDistFiles = distFilesRef.current
+              if (currentDistFiles && filePath && filePath in currentDistFiles) {
+                channel.port1.postMessage({
+                  type: 'BUILD_FILE_RESPONSE',
+                  payload: { requestId, content: currentDistFiles[filePath] }
+                })
+              }
+            }
           }
 
-          const blob = new Blob([content], { type: 'application/octet-stream' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+          navigator.serviceWorker.controller!.postMessage({ type: 'INIT_MESSAGE_PORT' }, [channel.port2])
+          setIsSwReady(true)
+        })
+        .catch((error) => {
+          console.error('[App] SW registration failed:', error)
+        })
+    }
+  }, [])
 
-          downloaded++;
-          showMessage(`⏳ 下载中... (${downloaded}/${fileCount})`, 'success');
+  useEffect(() => {
+    if (isSwReady && distFiles && isPreviewVisible) {
+      setPreviewKey(prev => prev + 1)
+    }
+  }, [isSwReady, distFiles, isPreviewVisible])
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const { type } = event.data
+
+      if (type === 'hmr-ready') {
+        if (previewIframeRef.current && hmrServerRef.current) {
+          const client = hmrServerRef.current.connectIframe(previewIframeRef.current)
+          if (client) {
+            hmrClientRef.current = client
+            setIsHmrConnected(true)
+          }
         }
+      }
+    }
 
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [])
+
+  const showMessage = useCallback((text: string, type: 'success' | 'error') => {
+    setMessage({ text, type })
+    setTimeout(() => setMessage(null), 3000)
+  }, [])
+
+  const handleFileSelect = useCallback((path: string) => {
+    setCurrentFile(path)
+  }, [])
+
+  const handleFileSave = useCallback((path: string, content: string) => {
+    setFiles(prev => {
+      const updated = { ...prev, [path]: content }
+      updateFile(path, content)
+      return updated
+    })
+    showMessage(`✅ 文件已保存: ${path}`, 'success')
+  }, [updateFile, showMessage])
+
+  const handleToggleWatch = useCallback(async () => {
+    if (isWatchMode) {
+      stopWatch()
+      showMessage('⏹️ Watch 模式已停止', 'success')
+    } else {
+      try {
+        await startWatch()
+        showMessage('▶️ Watch 模式已启动', 'success')
+      } catch (error: any) {
+        showMessage('❌ 启动 Watch 失败: ' + error.message, 'error')
+      }
+    }
+  }, [isWatchMode, startWatch, stopWatch, showMessage])
+
+  const handleRun = useCallback(async () => {
+    if (!distFiles) {
+      showMessage('❌ 请先等待构建完成', 'error')
+      return
+    }
+
+    setIsRunOutputVisible(true)
+    setRunOutput('')
+
+    try {
+      setRunOutput('正在启动预览...\n')
+      setIsPreviewVisible(true)
+      showMessage('🔥 HMR 预览已启动', 'success')
+    } catch (error: any) {
+      console.error('Run error:', error)
+      setRunOutput('[ERROR] ' + error.message)
+      showMessage('❌ 启动失败: ' + error.message, 'error')
+    }
+  }, [distFiles, showMessage])
+
+  const handleDownload = useCallback(async () => {
+    if (!distFiles) {
+      showMessage('❌ 没有可下载的产物，请先打包', 'error')
+      return
+    }
+
+    try {
+      const fileEntries = Object.entries(distFiles)
+      const fileCount = fileEntries.length
+
+      if (fileCount === 1) {
+        const [path, content] = fileEntries[0]
+        const filename = path.split('/').pop() || 'output.js'
+        const blob = new Blob([content], { type: 'application/octet-stream' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        showMessage(`✅ 文件已下载: ${filename}`, 'success')
+      } else {
+        let downloaded = 0
+        for (const [path, content] of fileEntries) {
+          const filename = path.replace('/dist/', '')
+          if (downloaded > 0) {
+            await new Promise(resolve => setTimeout(resolve, 300))
+          }
+          const blob = new Blob([content], { type: 'application/octet-stream' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = filename
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+          downloaded++
+          showMessage(`⏳ 下载中... (${downloaded}/${fileCount})`, 'success')
+        }
         showMessage(
           `✅ 已触发 ${fileCount} 个文件下载。如果浏览器阻止了部分下载，请在地址栏允许多个下载。`,
           'success'
-        );
+        )
       }
     } catch (error: any) {
-      console.error('下载错误:', error);
-      showMessage('❌ 下载失败: ' + error.message, 'error');
+      console.error('下载错误:', error)
+      showMessage('❌ 下载失败: ' + error.message, 'error')
     }
-  }, [distFiles, showMessage]);
+  }, [distFiles, showMessage])
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden">
-      {/* 顶部标题栏 */}
       <div className="flex-shrink-0 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-4">
-        <h1 className="text-3xl font-bold text-center">🚀 Rspack Browser Bundling</h1>
-        <p className="text-center text-sm opacity-90 mt-1">在浏览器中实时打包 JavaScript 代码</p>
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div className="flex-1" />
+          <div className="flex-1 text-center">
+            <h1 className="text-3xl font-bold">🚀 Rspack Browser Bundling</h1>
+            <p className="text-sm opacity-90 mt-1">基于 Service Worker + MessagePort HMR 的浏览器端构建工具</p>
+          </div>
+          <div className="flex-1 text-right">
+            {message && (
+              <div
+                className={`inline-block px-4 py-2 rounded-lg shadow-lg ${
+                  message.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+                }`}
+              >
+                {message.text}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* 消息提示 */}
-      {message && (
-        <div
-          className={`fixed top-20 right-4 z-50 px-4 py-2 rounded shadow-lg ${
-            message.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
-
-      {/* 主容器 */}
       <div className="flex flex-1 overflow-hidden">
-        {/* 左侧文件树 */}
         <div className="w-80 border-r border-gray-300 flex flex-col overflow-hidden bg-white">
           <div className="p-4 border-b border-gray-200 bg-gray-50">
             <h2 className="text-lg font-semibold text-gray-800">📁 项目文件</h2>
@@ -225,33 +298,58 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* 中间编辑器 */}
         <div className="flex-1 flex flex-col overflow-hidden bg-white">
-          <MonacoEditor
-            ref={editorRef}
-            files={files}
-            currentFile={currentFile}
-            onSave={handleFileSave}
-          />
+          <MonacoEditor ref={editorRef} files={files} currentFile={currentFile} onSave={handleFileSave} />
         </div>
 
-        {/* 右侧操作面板 */}
         <div className="w-96 border-l border-gray-300 flex flex-col overflow-hidden bg-gray-50">
           <OperationPanel
-            onBundle={handleBundle}
+            onToggleWatch={handleToggleWatch}
             onRun={handleRun}
             onDownload={handleDownload}
-            isBundling={isBundling}
+            isWatchMode={isWatchMode}
+            isCompiling={isCompiling}
+            hmrStatus={hmrStatus}
             buildStats={buildStats}
             distFiles={distFiles}
-            buildOutput={buildOutput}
             runOutput={runOutput}
             isRunOutputVisible={isRunOutputVisible}
           />
+
+          {isPreviewVisible && (
+            <div className="h-full border-t border-gray-300 flex flex-col min-h-0">
+              <div className="p-2 border-b border-gray-200 bg-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-700">
+                  🔥 HMR Preview {isHmrConnected && <span className="text-green-600">●</span>}
+                </h3>
+                <button
+                  onClick={() => setIsPreviewVisible(false)}
+                  className="text-gray-500 hover:text-gray-700 text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 bg-white">
+                {distFiles ? (
+                  <iframe
+                    key={previewKey}
+                    ref={previewIframeRef}
+                    src="/preview/index.html"
+                    className="w-full h-full border-0"
+                    title="HMR Preview"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    等待构建...
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default App;
+export default App

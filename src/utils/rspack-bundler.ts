@@ -51,7 +51,8 @@ function prepareVirtualFiles(files: FileSystem): FileSystem {
  */
 function createRspackConfig(files: FileSystem) {
   return {
-    mode: 'production' as const,
+    mode: 'development' as const,
+    devtool: false,
     context: '/',
     entry: {
       main: '/src/main.ts',
@@ -69,13 +70,14 @@ function createRspackConfig(files: FileSystem) {
       },
     },
     externals: {
+      '@lcap/vant': 'LcapVant',
+
       vue: 'Vue',
       'vue-router': 'VueRouter',
       pinia: 'Pinia',
       'vue-i18n': 'VueI18n',
-      lodash: '_',
-      'vue/compiler-sfc': 'VueCompilerSfc',
-      '@lcap/vant': 'LcapVant',
+      'vue/compiler-sfc': 'VueCompilerSFC',
+      lodash: 'Lodash',
     },
     module: {
       rules: [
@@ -345,4 +347,75 @@ export async function bundleWithRspack(options: BundleOptions): Promise<BundleRe
 export function getConfigString(files: FileSystem): string {
   const config = createRspackConfig(files);
   return JSON.stringify(config, null, 2);
+}
+
+export interface WatchOptions extends BundleOptions {
+  onBuildStart?: () => void;
+  onBuildEnd?: (result: BundleResult & { hash: string }) => void;
+  onBuildError?: (error: Error) => void;
+}
+
+export interface WatchResult {
+  watching: { close: (callback?: () => void) => void };
+  stop: () => void;
+}
+
+export function watchBundle(options: WatchOptions): WatchResult {
+  const { files, onBuildStart, onBuildEnd, onBuildError } = options;
+
+  const cleanedFiles = cleanDistFiles(files);
+  const preparedFiles = prepareVirtualFiles(cleanedFiles);
+
+  builtinMemFs.volume.fromJSON(preparedFiles, '/');
+
+  const config = createRspackConfig(preparedFiles);
+
+  config.plugins = config.plugins || [];
+  config.plugins.push(new rspack.HotModuleReplacementPlugin());
+
+  const compiler = rspack(config);
+
+  const watching = compiler.watch({
+    poll: 1000,
+  }, (err, stats) => {
+    if (err) {
+      onBuildError?.(err);
+      return;
+    }
+
+    if (stats?.hasErrors()) {
+      const info = stats.toJson();
+      const error = new Error(info.errors?.[0]?.message || 'Build failed');
+      onBuildError?.(error);
+      return;
+    }
+
+    const distFiles = builtinMemFs.volume.toJSON('/dist');
+    const bundledCode = distFiles['/dist/main.js'] || '';
+
+    onBuildEnd?.({
+      distFiles,
+      bundledCode,
+      buildStats: {
+        buildTime: Date.now().toString(),
+        outputSize: formatBytes(bundledCode.length),
+        moduleCount: stats?.toJson().modules?.length || 0,
+      },
+      outputFiles: distFiles,
+      hash: stats?.hash || '',
+    });
+  });
+
+  return {
+    watching,
+    stop: () => watching.close(),
+  };
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }

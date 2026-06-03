@@ -15,5 +15,5 @@ root.render(
   </React.StrictMode>
 );
 
-console.log('🚀 Rspack Browser Demo (React + TypeScript + UnoCSS)');
+console.log('🚀 Rspack Browser Demo');
 console.log('✅ 应用已启动');

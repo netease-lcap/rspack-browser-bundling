@@ -40,3 +40,18 @@ export interface Message {
   text: string
   type: MessageType
 }
+
+// HMR 相关类型（从 hmr.ts 重新导出）
+export type { 
+  HMRStatus, 
+  WorkerMessage, 
+  MainThreadMessage,
+  BuildEndPayload,
+  HMRUpdatePayload 
+} from './types/hmr';
+
+// 添加 HMR 状态到消息类型
+export interface HMRMessage extends Message {
+  status: 'building' | 'hmr-updating' | 'hmr-applied' | 'error';
+  progress?: number;
+}

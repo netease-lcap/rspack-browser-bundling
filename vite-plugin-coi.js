@@ -36,11 +36,12 @@ export default function vitePluginCOI() {
       ]
     },
     
-    // 开发模式：直接通过 Vite dev server 设置 COOP/COEP headers，无需 Service Worker
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp')
         res.setHeader('Cross-Origin-Opener-Policy', 'same-origin')
+        res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp')
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+
         next()
       })
     },

@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import UnoCSS from 'unocss/vite'
 import nodePath from 'path'
 import { fileURLToPath } from 'url'
 import vitePluginCOI from './vite-plugin-coi.js'
@@ -10,7 +9,6 @@ const __dirname = nodePath.dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
   base: process.env.GITHUB_ACTIONS ? '/rspack-browser-bundling/' : '/',
   plugins: [
-    UnoCSS(),
     react(),
     vitePluginCOI()
   ],
@@ -26,8 +24,12 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@rspack/browser', '@monaco-editor/react'],
     esbuildOptions: {
-      target: 'esnext'  
+      target: 'esnext'
     }
+  },
+  worker: {
+    format: 'es',
+    plugins: () => [react()],
   },
   build: {
     target: 'esnext',
@@ -35,7 +37,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'files': ['./src/files.ts']
+          'files': ['./src/files.ts'],
         }
       }
     }
