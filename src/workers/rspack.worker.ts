@@ -7,6 +7,7 @@
  */
 
 import { rspack, builtinMemFs, BrowserRequirePlugin, DefinePlugin, HtmlRspackPlugin } from '@rspack/browser';
+import type { Configuration as RspackConfig } from '@rspack/browser';
 // @ts-ignore - JS module without types
 import CustomVueLoader from '../rspack/loaders/vue';
 // @ts-ignore - JS module without types
@@ -21,12 +22,13 @@ import type {
   MainThreadMessage,
   WorkerMessage,
   BuildEndPayload,
-  HMRUpdatePayload,
   BuildErrorPayload,
   InitPayload,
   UpdateFilePayload,
 } from '../types/hmr';
 import type { FileSystem } from '../types';
+// @ts-ignore - This is a virtual module provided by the dev server
+import DevServerCode from '../rspack/dev-server/client';
 
 // ============================================================================
 // Type Definitions for Worker Context
@@ -36,22 +38,6 @@ interface CompilerInstance {
   watch: (options: any, callback: (err: Error | null, stats: any) => void) => any;
   run: (callback: (err: Error | null, stats: any) => void) => void;
   close: (callback: () => void) => void;
-}
-
-interface RspackConfig {
-  mode: 'development' | 'production';
-  context: string;
-  entry: Record<string, string>;
-  output: {
-    path: string;
-    filename: string;
-    chunkFilename: string;
-    hotUpdateChunkFilename?: string;
-    hotUpdateMainFilename?: string;
-    publicPath?: string;
-  };
-  plugins: any[];
-  [key: string]: any;
 }
 
 // ============================================================================
@@ -88,26 +74,11 @@ function postError(message: string, details?: string, stack?: string): void {
  * Send build end message to main thread
  */
 function postBuildEnd(
-  hash: string,
-  bundledCode: string,
   distFiles: Record<string, string>,
   stats: BuildEndPayload['stats']
 ): void {
-  const payload: BuildEndPayload = { hash, bundledCode, distFiles, stats };
+  const payload: BuildEndPayload = { distFiles, stats };
   postMessageToMain(WorkerMessageType.BUILD_END, payload);
-}
-
-/**
- * Send HMR update message to main thread
- */
-function postHMRUpdate(
-  hash: string,
-  updatedModules: string[],
-  removedModules: string[],
-  updates: HMRUpdatePayload['updates']
-): void {
-  const payload: HMRUpdatePayload = { hash, updatedModules, removedModules, updates };
-  postMessageToMain(WorkerMessageType.HMR_UPDATE, payload);
 }
 
 /**
@@ -142,6 +113,8 @@ function prepareVirtualFiles(files: FileSystem): FileSystem {
   const preparedFiles = { ...files };
   // Add necessary loader files
   preparedFiles['/LOADER/rspack-vue-loader.js'] = '';
+  // Add dev-server client
+  preparedFiles['/DEVSERVER/client.js'] = DevServerCode;
   return preparedFiles;
 }
 
@@ -181,7 +154,10 @@ function createRspackConfig(files: FileSystem): RspackConfig {
     devtool: false,
     context: '/',
     entry: {
-      main: '/src/main.ts',
+      main: [
+        '/DEVSERVER/client.js',
+        '/src/main.ts',
+      ],
     },
     output: {
       path: '/dist',
@@ -395,70 +371,26 @@ function processBuildOutput(): {
 }
 
 /**
- * Extract HMR updates from compilation stats
- */
-function extractHMRUpdates(stats: any): HMRUpdatePayload['updates'] {
-  const updates: HMRUpdatePayload['updates'] = [];
-  
-  try {
-    const compilation = stats.compilation;
-    if (!compilation) return updates;
-
-    // Get updated modules from compilation
-    const modules = compilation.modules || [];
-    
-    for (const module of modules) {
-      if (module.resource && module._cachedSources) {
-        const source = module._cachedSources.get('javascript/module');
-        if (source) {
-          updates.push({
-            moduleId: module.identifier(),
-            filename: module.resource,
-            code: typeof source === 'string' ? source : source.source?.() || '',
-          });
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error extracting HMR updates:', error);
-  }
-
-  return updates;
-}
-
-/**
  * Handle build completion
  */
 function handleBuildComplete(stats: any, startTime: number): void {
   try {
-    const { distFiles, bundledCode, totalSize, hash } = processBuildOutput();
+    const { distFiles } = processBuildOutput();
     const endTime = performance.now();
     const buildTime = Math.round(endTime - startTime);
     const distPaths = Object.keys(distFiles);
 
-    // Check if this is an HMR update or initial build
-    console.log('[Worker] Build complete. lastHash:', lastHash, 'current hash:', hash, 'isHMR:', lastHash !== null && lastHash !== hash);
-    if (lastHash !== null && lastHash !== hash) {
-      // This is an HMR update
-      console.log('[Worker] Sending HMR_UPDATE');
-      const updates = extractHMRUpdates(stats);
-      const updatedModules = updates.map(u => u.moduleId);
-      
-      postHMRUpdate(
-        hash,
-        updatedModules,
-        [], // removedModules - would need to track from previous build
-        updates
-      );
-    } else {
-      // Initial build or full rebuild
-      console.log('[Worker] Sending BUILD_END');
-      postBuildEnd(hash, bundledCode, distFiles, {
-        buildTime,
-        moduleCount: distPaths.length,
-        outputSize: totalSize,
-      });
-    }
+    const hash = stats.hash;
+    const isHmrUpdate = lastHash !== null;
+
+    console.log('[Worker] Build complete. hash:', hash, 'lastHash:', lastHash, 'isHMR:', isHmrUpdate);
+    postBuildEnd(distFiles, {
+      hash,
+      lastHash,
+      buildTime,
+      moduleCount: distPaths.length,
+      isHmrUpdate,
+    });
 
     lastHash = hash;
   } catch (error: any) {
@@ -512,8 +444,10 @@ async function initWatch(files: FileSystem): Promise<void> {
     try {
       watching = compiler.watch(
         {
-          poll: 1000,
-          // ignored: /node_modules/,
+          poll: false,
+          // Exclude the output directory so that rspack writing /dist/* files
+          // after a build does not trigger another watch cycle immediately.
+          ignored: /\/(dist|node_modules)\//,
         },
         (err: Error | null, stats: any) => {
           if (err || (stats && stats.hasErrors())) {
@@ -570,6 +504,8 @@ function updateFile(path: string, content: string): void {
   }
 
   try {
+    console.log(`[Worker] Updating file: ${path}`);
+
     // Update in-memory file system
     updateFileInMemfs(path, content);
 
@@ -579,18 +515,8 @@ function updateFile(path: string, content: string): void {
     // Notify that file has changed
     postMessageToMain(WorkerMessageType.FILE_CHANGE, { path });
 
-    // Try to trigger watch event if watch mode is active
-    // console.log('[Worker] Checking watch mode - watching:', !!watching);
-    // if (watching) {
-    //   console.log('[Worker] Invalidating watch for path:', path);
-    //   try {
-    //     // Use Watching.invalidate() to trigger recompilation
-    //     (watching as any).invalidate();
-    //     console.log('[Worker] Watch invalidated successfully');
-    //   } catch (e) {
-    //     console.warn('[Worker] Failed to invalidate watch:', e);
-    //   }
-    // }
+    // builtinMemFs polls the virtual FS automatically (poll: 1000),
+    // so no manual invalidate() is needed.
   } catch (error: any) {
     postError('Failed to update file', error.message, error.stack);
   }

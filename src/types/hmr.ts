@@ -66,17 +66,16 @@ export interface MainThreadMessage {
 
 /** 构建结束时的数据 */
 export interface BuildEndPayload {
-  /** 构建哈希 */
-  hash: string
-  /** 打包后的代码 */
-  bundledCode: string
   /** 产物文件 */
   distFiles: Record<string, string>
   /** 构建统计 */
   stats: {
+    hash: string
+    lastHash: string | null
     buildTime: number
     moduleCount: number
-    outputSize: number
+    /** true 表示是 HMR 增量更新（含 hot-update 文件），false 表示首次全量构建 */
+    isHmrUpdate?: boolean
   }
 }
 
@@ -104,12 +103,6 @@ export interface HMRModuleUpdate {
 export interface HMRUpdatePayload {
   /** 构建哈希 */
   hash: string
-  /** 更新的模块列表 */
-  updatedModules: string[]
-  /** 移除的模块列表 */
-  removedModules: string[]
-  /** 具体更新内容 */
-  updates: HMRModuleUpdate[]
 }
 
 /** 初始化完成数据 */

@@ -75,7 +75,6 @@ export interface ReloadAction {
 export interface PartialUpdateAction {
   action: HMR_ACTIONS_SENT_TO_BROWSER.PARTIAL
   hash: string
-  updates: HMRUpdatePayload
 }
 
 export type HMR_ACTION_TYPES =
@@ -102,7 +101,6 @@ export class HmrServer {
   private subscriptions = new Map<string, Set<HmrClient>>()
   private sessionId: number
   private options: HmrServerOptions
-  private hmrHash = 0
 
   constructor(options: HmrServerOptions = {}) {
     this.options = options
@@ -122,7 +120,7 @@ export class HmrServer {
       id: clientId,
       port: port1,
       send: (message: HMR_ACTION_TYPES) => {
-        port1.postMessage(JSON.stringify(message))
+        port1.postMessage(message)
       },
       close: () => {
         this.removeClient(client)
@@ -139,20 +137,6 @@ export class HmrServer {
     }
 
     this.clients.add(client)
-
-    // Send connected message
-    client.send({
-      action: HMR_ACTIONS_SENT_TO_BROWSER.TURBOPACK_CONNECTED,
-      data: { sessionId: this.sessionId },
-    })
-
-    // Send initial sync
-    client.send({
-      action: HMR_ACTIONS_SENT_TO_BROWSER.SYNC,
-      hash: String(this.hmrHash),
-      errors: [],
-      warnings: [],
-    })
 
     return { clientPort: port2, client }
   }
@@ -188,6 +172,8 @@ export class HmrServer {
     try {
       const message: HmrClientMessage =
         typeof data === 'string' ? JSON.parse(data) : data
+
+      console.log('[HmrServer] Received message from client:', client.id, 'message:', message)
 
       if ('type' in message) {
         switch (message.type) {
@@ -238,13 +224,10 @@ export class HmrServer {
   /**
    * Send an HMR update to all connected clients.
    */
-  public sendUpdate(update: HMRUpdatePayload) {
-    this.hmrHash++
-
+  public sendUpdate(payload: HMRUpdatePayload) {
     const message: PartialUpdateAction = {
       action: HMR_ACTIONS_SENT_TO_BROWSER.PARTIAL,
-      hash: String(this.hmrHash),
-      updates: update,
+      hash: payload.hash,
     }
 
     for (const client of this.clients) {
@@ -270,8 +253,9 @@ export class HmrServer {
   /**
    * Notify all clients that a build has completed.
    */
-  public notifyBuilt(hash: string) {
-    const message: BuiltAction = {
+  public notifyBuilt(result: { hash: string }) {
+    const { hash } = result
+    let message: BuiltAction = {
       action: HMR_ACTIONS_SENT_TO_BROWSER.BUILT,
       hash,
     }

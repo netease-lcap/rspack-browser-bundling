@@ -31,19 +31,29 @@ const App: React.FC = () => {
   const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null)
 
   const handleBuildEnd = useCallback((result: BuildEndPayload) => {
-    console.log('[App] Build end, files:', Object.keys(result.distFiles))
-    setDistFiles(result.distFiles)
+    const { distFiles, stats } = result;
+    const { hash, lastHash, isHmrUpdate } = stats
+    console.log('[App] Build end, hash:', hash, 'lastHash:', lastHash, 'isHMR:', isHmrUpdate, 'files:', Object.keys(distFiles))
+
+    // Always update distFilesRef synchronously so the SW can serve the latest
+    // files (including .hot-update.json / .hot-update.js) before we signal
+    // the iframe to reload or call module.hot.check().
+    distFilesRef.current = distFiles
+    setDistFiles(distFiles)
 
     if (hmrServerRef.current && isHmrConnected) {
-      hmrServerRef.current.notifyBuilt(result.hash)
-    }
-  }, [isHmrConnected])
+      
 
-  const handleHMRUpdate = useCallback((update: HMRUpdatePayload) => {
-    console.log('[App] HMR update:', update)
-    
-    if (hmrServerRef.current && isHmrConnected) {
-      hmrServerRef.current.sendUpdate(update)
+      if (isHmrUpdate) {
+        hmrServerRef.current.sendUpdate({
+          hash,
+        })
+      } else {
+        hmrServerRef.current.notifyBuilt({
+          hash,
+        })
+      }
+
     }
   }, [isHmrConnected])
 
@@ -60,10 +70,8 @@ const App: React.FC = () => {
     config: {
       mode: 'development',
       enableHMR: true,
-      enableReactRefresh: true,
     },
     onBuildEnd: handleBuildEnd,
-    onHMRUpdate: handleHMRUpdate,
   })
 
   useEffect(() => {
@@ -136,10 +144,12 @@ const App: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    if (isSwReady && distFiles && isPreviewVisible) {
+    // When HMR is connected, the iframe reloads itself via notifyBuilt.
+    // Only force a key-based reload for the initial load or when HMR is not yet connected.
+    if (isSwReady && distFiles && isPreviewVisible && !isHmrConnected) {
       setPreviewKey(prev => prev + 1)
     }
-  }, [isSwReady, distFiles, isPreviewVisible])
+  }, [isSwReady, distFiles, isPreviewVisible, isHmrConnected])
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -147,6 +157,12 @@ const App: React.FC = () => {
 
       if (type === 'hmr-ready') {
         if (previewIframeRef.current && hmrServerRef.current) {
+          // Close the previous client before creating a new one so stale
+          // connections don't accumulate in HmrServer's client set.
+          if (hmrClientRef.current) {
+            hmrClientRef.current.close()
+            hmrClientRef.current = null
+          }
           const client = hmrServerRef.current.connectIframe(previewIframeRef.current)
           if (client) {
             hmrClientRef.current = client
