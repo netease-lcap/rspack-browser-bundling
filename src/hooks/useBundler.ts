@@ -1,5 +1,5 @@
 /**
- * useHMR React Hook
+ * useBundler React Hook
  * 
  * Encapsulates HMR logic for React components.
  * Manages Worker communication and state updates.
@@ -14,7 +14,6 @@ import type {
   HMRStatus,
   BuildEndPayload,
   BuildErrorPayload,
-  HMRUpdatePayload,
   UseHMROptions,
   UseHMRResult,
   WorkerMessage,
@@ -28,12 +27,11 @@ interface HMRBridgeInstance {
   terminate: () => void;
 }
 
-export function useHMR(options: UseHMROptions & { initialFiles: FileSystem }): UseHMRResult {
+export function useBundler(options: UseHMROptions & { initialFiles: FileSystem }): UseHMRResult {
   // State
   const [status, setStatus] = useState<HMRStatus>('idle');
   const [isWatchMode, setIsWatchMode] = useState(false);
   const [isCompiling, setIsCompiling] = useState(false);
-  const [lastBuildResult, setLastBuildResult] = useState<BuildEndPayload | null>(null);
   const [lastError, setLastError] = useState<BuildErrorPayload | null>(null);
 
   // Refs
@@ -67,14 +65,7 @@ export function useHMR(options: UseHMROptions & { initialFiles: FileSystem }): U
       case WorkerMessageType.BUILD_END:
         setIsCompiling(false);
         setStatus('idle');
-        setLastBuildResult(payload as BuildEndPayload);
         callbacksRef.current.onBuildEnd?.(payload as BuildEndPayload);
-        break;
-
-      case WorkerMessageType.HMR_UPDATE:
-        setStatus('hmr-updating');
-        callbacksRef.current.onHMRUpdate?.(payload as HMRUpdatePayload);
-        setStatus('hmr-applied');
         break;
 
       case WorkerMessageType.ERROR:
@@ -179,7 +170,7 @@ export function useHMR(options: UseHMROptions & { initialFiles: FileSystem }): U
 
   // Update file
   const updateFile = useCallback((path: string, content: string) => {
-    console.log('[useHMR] updateFile called:', path, 'isReady:', bridgeRef.current?.isReady);
+    console.log('[useBundler] updateFile called:', path, 'isReady:', bridgeRef.current?.isReady);
     if (!bridgeRef.current?.isReady) {
       console.warn('Cannot update file: HMR is not ready');
       return;
@@ -192,7 +183,7 @@ export function useHMR(options: UseHMROptions & { initialFiles: FileSystem }): U
         content,
       },
     });
-    console.log('[useHMR] UPDATE_FILE message sent to worker');
+    console.log('[useBundler] UPDATE_FILE message sent to worker');
   }, []);
 
   // Refresh (trigger rebuild)
@@ -224,18 +215,10 @@ export function useHMR(options: UseHMROptions & { initialFiles: FileSystem }): U
     };
   }, []);
 
-  // Auto-start if enabled
-  useEffect(() => {
-    if (options.autoStart && !isWatchMode) {
-      startWatch();
-    }
-  }, [options.autoStart, isWatchMode, startWatch]);
-
   return {
     status,
     isWatchMode,
     isCompiling,
-    lastBuildResult,
     lastError,
     startWatch,
     stopWatch,
@@ -244,4 +227,4 @@ export function useHMR(options: UseHMROptions & { initialFiles: FileSystem }): U
   };
 }
 
-export default useHMR;
+export default useBundler;

@@ -135,8 +135,6 @@ export interface UpdateFilePayload {
 
 /** useHMR hook 的选项 */
 export interface UseHMROptions {
-  /** 是否自动启动监听 */
-  autoStart?: boolean
   /** 文件变更回调 */
   onFileChange?: (path: string, content: string) => void
   /** 构建结束回调 */

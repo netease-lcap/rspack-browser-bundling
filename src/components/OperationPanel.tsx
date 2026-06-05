@@ -1,38 +1,26 @@
-import type { DistFile, BuildStats as TBuildStats } from '../types'
 import type { HMRStatus } from '../types/hmr'
-import BuildStats from './BuildStats'
-import FileList from './FileList'
 
 interface OperationPanelProps {
   onToggleWatch: () => void
   onRun: () => void
-  onDownload: () => void
   isWatchMode: boolean
   isCompiling: boolean
-  hmrStatus: HMRStatus
-  buildStats: TBuildStats | null
+  bundlerStatus: HMRStatus
   distFiles: Record<string, string> | null
-  runOutput: string
-  isRunOutputVisible: boolean
 }
 
 export default function OperationPanel({
   onToggleWatch,
   onRun,
-  onDownload,
   isWatchMode,
   isCompiling,
-  hmrStatus,
-  buildStats,
+  bundlerStatus,
   distFiles,
-  runOutput,
-  isRunOutputVisible,
 }: OperationPanelProps) {
   const canRun = !!distFiles
-  const canDownload = !!distFiles
 
   const getStatusText = () => {
-    switch (hmrStatus) {
+    switch (bundlerStatus) {
       case 'idle':
         return isWatchMode ? '就绪' : '未启动'
       case 'building':
@@ -49,7 +37,7 @@ export default function OperationPanel({
   }
 
   const getStatusColor = () => {
-    switch (hmrStatus) {
+    switch (bundlerStatus) {
       case 'idle':
         return isWatchMode ? 'text-green-600' : 'text-gray-500'
       case 'building':
@@ -64,14 +52,6 @@ export default function OperationPanel({
         return 'text-gray-500'
     }
   }
-
-  const distFilesList: DistFile[] = distFiles
-    ? Object.entries(distFiles).map(([path, content]) => ({
-        path,
-        content,
-        size: new Blob([content]).size,
-      }))
-    : []
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
