@@ -26,6 +26,12 @@ function getMimeType(path) {
 
 function mapPreviewToDist(path) {
   if (path.startsWith('/preview/')) {
+
+    // 没有指定具体文件类型时，默认返回 index.html
+    if (!path.includes('.')) {
+      return '/dist/index.html'
+    }
+
     return '/dist/' + path.slice('/preview/'.length)
   }
   return path
@@ -87,13 +93,19 @@ async function fetchFromMainThread(distPath) {
 }
 
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing...')
   self.skipWaiting()
+  console.log('[SW] Installed')
 })
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating...')
-  event.waitUntil(self.clients.claim())
+  event.waitUntil(
+    self.clients.claim().then(() => {
+      console.log('[SW] Activated and claimed all clients')
+      return self.clients.matchAll({ type: 'window' }).then((clients) => {
+        clients.forEach((client) => client.postMessage({ type: 'SW_ACTIVATED' }))
+      })
+    })
+  )
 })
 
 self.addEventListener('fetch', (event) => {
@@ -130,21 +142,20 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     (async () => {
       const distPath = mapPreviewToDist(pathname)
-      console.log('[SW] Fetching:', pathname, '->', distPath)
 
       const content = await fetchFromMainThread(distPath)
       if (content !== null) {
-        console.log(`[SW] Serving ${pathname} from main thread`)
+        console.log(`[SW] Serving ${pathname} from main thread ${distPath}`)
         return new Response(content, {
           headers: {
-            'Content-Type': getMimeType(pathname),
+            'Content-Type': getMimeType(distPath),
             'Cache-Control': 'no-cache',
             ...CORS_HEADERS,
           },
         })
       }
 
-      console.log('[SW] File not found:', pathname)
+      console.error('[SW] File not found:', pathname)
       return new Response('File not found: ' + pathname, {
         status: 404,
         headers: { 'Content-Type': 'text/plain', ...CORS_HEADERS },

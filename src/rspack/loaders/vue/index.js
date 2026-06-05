@@ -181,6 +181,7 @@ export default function loader(source) {
       code += content + '\n\n';
       code += `__default__.__scopeId = "${scopeId}";\n`;
       code += `__default__.__file = ${JSON.stringify(filename)};\n\n`;
+      code += genHmrCode(scopeId) + '\n\n';
       code += `export default __default__;\n`;
       
     } catch (e) {
@@ -204,6 +205,7 @@ export default function loader(source) {
 __default__.render = render;
 __default__.__scopeId = "${scopeId}";
 __default__.__file = ${JSON.stringify(filename)};
+${genHmrCode(scopeId)}
 
 export default __default__;
 `;
@@ -211,6 +213,7 @@ export default __default__;
       code += `
 __default__.__scopeId = "${scopeId}";
 __default__.__file = ${JSON.stringify(filename)};
+${genHmrCode(scopeId)}
 
 export default __default__;
 `;
@@ -218,6 +221,26 @@ export default __default__;
   }
   
   return code;
+}
+
+// HMR 注入代码
+function genHmrCode(hmrId) {
+  return `
+  if (module.hot) {
+    __default__.__hmrId = "${hmrId}";
+    const __hmr_api__ = typeof globalThis !== 'undefined' ? globalThis.__VUE_HMR_RUNTIME__ : undefined;
+    if (__hmr_api__) {
+      if (!module.hot.data) {
+        __hmr_api__.createRecord("${hmrId}", __default__);
+      } else {
+        __hmr_api__.reload("${hmrId}", __default__);
+      }
+    } else {
+      console.error('[HMR] Vue HMR runtime is not available.');
+    }
+    module.hot.accept();
+    module.hot.dispose(function(data) { data.reload = true; });
+  }`;
 }
 
 // 简单的 hash 函数

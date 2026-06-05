@@ -4,7 +4,7 @@ import FileTree from './FileTree'
 import MonacoEditor from './MonacoEditor'
 import OperationPanel from './OperationPanel'
 
-import filesData from '../files'
+import filesData from '../files.json'
 import { useHMR } from '../hooks/useHMR'
 import { HmrServer, HmrClient } from '../hmr/HmrServer'
 import type { FileSystem, BuildStats, MonacoEditorInstance } from '../types'
@@ -35,9 +35,6 @@ const App: React.FC = () => {
     const { hash, lastHash, isHmrUpdate } = stats
     console.log('[App] Build end, hash:', hash, 'lastHash:', lastHash, 'isHMR:', isHmrUpdate, 'files:', Object.keys(distFiles))
 
-    // Always update distFilesRef synchronously so the SW can serve the latest
-    // files (including .hot-update.json / .hot-update.js) before we signal
-    // the iframe to reload or call module.hot.check().
     distFilesRef.current = distFiles
     setDistFiles(distFiles)
 
@@ -96,50 +93,58 @@ const App: React.FC = () => {
   const distFilesRef = useRef<Record<string, string> | null>(null)
 
   useEffect(() => {
-    distFilesRef.current = distFiles
-  }, [distFiles])
+    if (!('serviceWorker' in navigator)) return
 
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(async (registration) => {
-          swRegistrationRef.current = registration
-          
-          await navigator.serviceWorker.ready
-          
-          if (!navigator.serviceWorker.controller) {
-            console.log('[App] Waiting for SW to take control...')
-            await new Promise<void>((resolve) => {
-              navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true })
+    const initMessagePort = () => {
+      if (!navigator.serviceWorker.controller) return
+      console.log('[App] Initializing MessagePort with SW controller')
+      const channel = new MessageChannel()
+      messagePortRef.current = channel.port1
+
+      channel.port1.onmessage = (event) => {
+        const { type, payload } = event.data
+        if (type === 'GET_BUILD_FILE') {
+          const filePath = payload?.path as string
+          const requestId = payload?.requestId as number
+          const currentDistFiles = distFilesRef.current
+          if (currentDistFiles && filePath && filePath in currentDistFiles) {
+            channel.port1.postMessage({
+              type: 'BUILD_FILE_RESPONSE',
+              payload: { requestId, content: currentDistFiles[filePath] }
             })
           }
-          
-          console.log('[App] SW is now controlling, initializing MessagePort')
-          const channel = new MessageChannel()
-          messagePortRef.current = channel.port1
+        }
+      }
 
-          channel.port1.onmessage = (event) => {
-            const { type, payload } = event.data
-            if (type === 'GET_BUILD_FILE') {
-              const filePath = payload?.path as string
-              const requestId = payload?.requestId as number
-              console.log('[App] Received GET_BUILD_FILE for:', filePath)
-              const currentDistFiles = distFilesRef.current
-              if (currentDistFiles && filePath && filePath in currentDistFiles) {
-                channel.port1.postMessage({
-                  type: 'BUILD_FILE_RESPONSE',
-                  payload: { requestId, content: currentDistFiles[filePath] }
-                })
-              }
-            }
-          }
+      navigator.serviceWorker.controller.postMessage({ type: 'INIT_MESSAGE_PORT' }, [channel.port2])
+      setIsSwReady(true)
+    }
 
-          navigator.serviceWorker.controller!.postMessage({ type: 'INIT_MESSAGE_PORT' }, [channel.port2])
-          setIsSwReady(true)
-        })
-        .catch((error) => {
-          console.error('[App] SW registration failed:', error)
-        })
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then(async (registration) => {
+        swRegistrationRef.current = registration
+
+        await navigator.serviceWorker.ready
+
+        if (!navigator.serviceWorker.controller) {
+          console.log('[App] Waiting for SW to take control...')
+          await new Promise<void>((resolve) => {
+            navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true })
+          })
+        }
+
+        initMessagePort()
+
+        // SW 更新后（skipWaiting + clients.claim）会再次触发 controllerchange，
+        // 此时需要向新 SW 重新发送 INIT_MESSAGE_PORT，否则新 SW 没有 messagePort 无法服务文件。
+        navigator.serviceWorker.addEventListener('controllerchange', initMessagePort)
+      })
+      .catch((error) => {
+        console.error('[App] SW registration failed:', error)
+      })
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', initMessagePort)
     }
   }, [])
 
@@ -350,7 +355,7 @@ const App: React.FC = () => {
                   <iframe
                     key={previewKey}
                     ref={previewIframeRef}
-                    src="/preview/index.html"
+                    src="/preview/"
                     className="w-full h-full border-0"
                     title="HMR Preview"
                   />

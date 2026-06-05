@@ -7,7 +7,7 @@ if (module.hot) {
     if (typeof console === 'undefined') {
       return;
     }
-    console[level].call(console, msg);
+    console[level]?.call(console, msg);
   };
 
   var lastHash;
@@ -46,21 +46,8 @@ if (module.hot) {
       })
       .catch(function (err) {
         var status = module.hot.status();
-        if (['abort', 'fail'].indexOf(status) >= 0) {
-          log(
-            'warning',
-            '[HMR] Cannot apply update. ' +
-              (typeof window !== 'undefined'
-                ? 'Need to do a full reload!'
-                : 'Please reload manually!'),
-          );
-          log('warning', '[HMR] ' + err);
-          if (typeof window !== 'undefined') {
-            window.location.reload();
-          }
-        } else {
-          log('warning', '[HMR] Update failed: ' + err);
-        }
+        console.warn('[HMR] hot status: ' + status);
+        console.error('[HMR] Update check failed:', err);
       });
   };
 

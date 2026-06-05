@@ -162,7 +162,7 @@ function createRspackConfig(files: FileSystem): RspackConfig {
     output: {
       path: '/dist',
       // Ensure this matches the service worker scope
-      publicPath: './',
+      publicPath: '/preview/',
       filename: '[name].[chunkhash:8].js',
       chunkFilename: '[name].[chunkhash:8].js',
       hotUpdateChunkFilename: '[id].[fullhash].hot-update.js',
@@ -244,7 +244,6 @@ function createRspackConfig(files: FileSystem): RspackConfig {
       }),
       new HtmlRspackPlugin({
         template: '/index.html',
-        publicPath: './',
         inject: 'body',
       }),
       new LcapPlugin({
