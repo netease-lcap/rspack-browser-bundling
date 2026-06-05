@@ -145,7 +145,6 @@ self.addEventListener('fetch', (event) => {
 
       const content = await fetchFromMainThread(distPath)
       if (content !== null) {
-        console.log(`[SW] Serving ${pathname} from main thread ${distPath}`)
         return new Response(content, {
           headers: {
             'Content-Type': getMimeType(distPath),
