@@ -37,7 +37,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'files': ['./src/files.ts'],
+          'files': ['./src/files.json'],
         }
       }
     }
