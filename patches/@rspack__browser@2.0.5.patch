@@ -1,5 +1,5 @@
 diff --git a/dist/index.js b/dist/index.js
-index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480e6133b06 100644
+index e89613c3af711af8d3adc2ccc7c68281af0a3378..96d49a48b578ffbbbf0c6a578c821aa51b864fe4 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -5,40 +5,40 @@ import * as __rspack_external__rspack_wasi_browser_js_bd433424 from "./rspack.wa
@@ -4421,29 +4421,18 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
              default: ()=>__rspack_default_export,
              existsSync: ()=>existsSync,
              fs: ()=>fs,
-@@ -36578,9 +36579,18 @@ __webpack_require__.add({
+@@ -36578,8 +36579,8 @@ __webpack_require__.add({
              volume: ()=>volume,
              watch: ()=>watch
          });
 -        var _napi_rs_wasm_runtime_fs__rspack_import_0 = __webpack_require__("../../node_modules/.pnpm/@napi-rs+wasm-runtime@1.1.4_@emnapi+core@1.10.0_@emnapi+runtime@1.10.0/node_modules/@napi-rs/wasm-runtime/dist/fs.js");
 -        var _rspack_binding__rspack_import_1 = __webpack_require__("@rspack/binding?d2c4");
--        const fs = _rspack_binding__rspack_import_1.__fs;
 +        var _napi_rs_wasm_runtime_fs__rspack_import_0 = __webpack__require__("../../node_modules/.pnpm/@napi-rs+wasm-runtime@1.1.4_@emnapi+core@1.10.0_@emnapi+runtime@1.10.0/node_modules/@napi-rs/wasm-runtime/dist/fs.js");
 +        var _rspack_binding__rspack_import_1 = __webpack__require__("@rspack/binding?d2c4");
-+
-+
-+        const fs = new Proxy(_rspack_binding__rspack_import_1.__fs, {
-+            get(target, prop) {
-+                return Reflect.get(target, prop)
-+            },
-+            set(target, prop, value) {
-+                return Reflect.set(target, prop, value)
-+            }
-+        });
+         const fs = _rspack_binding__rspack_import_1.__fs;
          const volume = _rspack_binding__rspack_import_1.__volume;
          const memfs = _napi_rs_wasm_runtime_fs__rspack_import_0.tO;
-         const { readFileSync, readdirSync, lstat, existsSync, readdir, watch } = fs;
-@@ -36597,17 +36607,17 @@ __webpack_require__.add({
+@@ -36597,17 +36598,17 @@ __webpack_require__.add({
      "?b05f" () {},
      "?c028" () {},
      "?8beb" () {},
@@ -4466,7 +4455,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
              hp: ()=>Buffer,
              tO: ()=>memfs
          });
-@@ -55213,13 +55223,13 @@ __webpack_require__.add({
+@@ -55213,13 +55214,13 @@ __webpack_require__.add({
      }
  });
  var browserslistTargetHandler_namespaceObject = {};
@@ -4484,7 +4473,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
      AsyncDependenciesBlock: ()=>AsyncDependenciesBlock,
      BannerPlugin: ()=>BannerPlugin,
      CaseSensitivePlugin: ()=>CaseSensitivePlugin,
-@@ -55293,13 +55303,13 @@ __webpack_require__.d(exports_namespaceObject, {
+@@ -55293,13 +55294,13 @@ __webpack_require__.d(exports_namespaceObject, {
      webworker: ()=>webworker
  });
  var ModuleFilenameHelpers_namespaceObject = {};
@@ -4501,7 +4490,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  function checkNodeVersion() {
      const { node, bun, deno } = process.versions;
      if (!node || bun || deno) return;
-@@ -55328,8 +55338,8 @@ const cutOffMessage = (stack, name, message)=>{
+@@ -55328,8 +55329,8 @@ const cutOffMessage = (stack, name, message)=>{
      const firstLine = stack.slice(0, nextLine);
      return firstLine === `${name}: ${message}` ? stack.slice(nextLine + 1) : stack;
  };
@@ -4512,7 +4501,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  class WebpackError_WebpackError extends Error {
      loc;
      file;
-@@ -55346,7 +55356,7 @@ Object.defineProperty(WebpackError_WebpackError.prototype, util_util.inspect.cus
+@@ -55346,7 +55347,7 @@ Object.defineProperty(WebpackError_WebpackError.prototype, util_util.inspect.cus
      configurable: true
  });
  const lib_WebpackError = WebpackError_WebpackError;
@@ -4521,7 +4510,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const LogType = Object.freeze({
      error: 'error',
      warn: 'warn',
-@@ -56345,8 +56355,8 @@ function createFakeCompilationDependencies(getDeps, addDeps) {
+@@ -56345,8 +56346,8 @@ function createFakeCompilationDependencies(getDeps, addDeps) {
          }
      };
  }
@@ -4532,7 +4521,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  class SourceAdapter {
      static fromBinding(source) {
          if (!source.map) return new webpack_sources_lib.RawSource(source.source);
-@@ -57529,8 +57539,8 @@ const CssChunkingPlugin = base_create(rspack_wasi_browser.BuiltinPluginName.CssC
+@@ -57529,8 +57530,8 @@ const CssChunkingPlugin = base_create(rspack_wasi_browser.BuiltinPluginName.CssC
  });
  const CssHttpExternalsRspackPlugin = base_create(external_rspack_wasi_browser_js_BuiltinPluginName.CssHttpExternalsRspackPlugin, ()=>void 0);
  const CssModulesPlugin = base_create(external_rspack_wasi_browser_js_BuiltinPluginName.CssModulesPlugin, ()=>{}, 'compilation');
@@ -4543,7 +4532,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const utils_PLUGIN_NAME = 'css-extract-rspack-plugin';
  const MODULE_TYPE = 'css/mini-extract';
  const DEFAULT_FILENAME = '[name].css';
-@@ -57904,7 +57914,7 @@ function applyLimits(options) {
+@@ -57904,7 +57905,7 @@ function applyLimits(options) {
  base_create(external_rspack_wasi_browser_js_BuiltinPluginName.EsmNodeTargetPlugin, ()=>void 0);
  const EvalDevToolModulePlugin = base_create(external_rspack_wasi_browser_js_BuiltinPluginName.EvalDevToolModulePlugin, (options)=>options, 'compilation');
  const EvalSourceMapDevToolPlugin = base_create(external_rspack_wasi_browser_js_BuiltinPluginName.EvalSourceMapDevToolPlugin, (options)=>options, 'compilation');
@@ -4552,7 +4541,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  function isNil(value) {
      return null == value;
  }
-@@ -58098,7 +58108,7 @@ const _parseResourceWithoutFragment = (str)=>{
+@@ -58098,7 +58099,7 @@ const _parseResourceWithoutFragment = (str)=>{
      };
  };
  const parseResourceWithoutFragment = makeCacheable(_parseResourceWithoutFragment);
@@ -4561,7 +4550,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  function isStatsColorSupported() {
      if (void 0 === supportsColor_process) return false;
      const env = supportsColor_process.env ?? {};
-@@ -58448,7 +58458,7 @@ class ValidationError extends Error {
+@@ -58448,7 +58449,7 @@ class ValidationError extends Error {
          this.name = 'ValidationError';
      }
  }
@@ -4570,7 +4559,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  class trace_JavaScriptTracer {
      static state = 'uninitialized';
      static startTime;
-@@ -58602,7 +58612,7 @@ class Hash {
+@@ -58602,7 +58603,7 @@ class Hash {
          throw new AbstractMethodError();
      }
  }
@@ -4579,7 +4568,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const MAX_SHORT_STRING = -4 & Math.floor(16368);
  class WasmHash {
      exports;
-@@ -58721,7 +58731,7 @@ const wasm_hash_create = (wasmModule, instancesPool, chunkSize, digestSize)=>{
+@@ -58721,7 +58722,7 @@ const wasm_hash_create = (wasmModule, instancesPool, chunkSize, digestSize)=>{
      return new WasmHash(new WebAssembly.Instance(wasmModule), instancesPool, chunkSize, digestSize);
  };
  const wasm_hash = wasm_hash_create;
@@ -4588,7 +4577,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  let createMd4;
  const hash_md4 = ()=>{
      if (!createMd4) {
-@@ -58730,7 +58740,7 @@ const hash_md4 = ()=>{
+@@ -58730,7 +58731,7 @@ const hash_md4 = ()=>{
      }
      return createMd4();
  };
@@ -4597,7 +4586,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  let createXxhash64;
  const hash_xxhash64 = ()=>{
      if (!createXxhash64) {
-@@ -58739,7 +58749,7 @@ const hash_xxhash64 = ()=>{
+@@ -58739,7 +58740,7 @@ const hash_xxhash64 = ()=>{
      }
      return createXxhash64();
  };
@@ -4606,7 +4595,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const BULK_SIZE = 2000;
  const digestCaches = {};
  class BulkUpdateDecorator extends Hash {
-@@ -58825,12 +58835,12 @@ const createHash_createHash = (algorithm)=>{
+@@ -58825,12 +58826,12 @@ const createHash_createHash = (algorithm)=>{
              }
          case 'native-md4':
              return new BulkUpdateDecorator(()=>{
@@ -4621,7 +4610,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
                  return createHash(algorithm);
              }, algorithm);
      }
-@@ -58910,7 +58920,7 @@ function handleResult(loader, module, callback) {
+@@ -58910,7 +58911,7 @@ function handleResult(loader, module, callback) {
      if ('function' != typeof loader.normal && 'function' != typeof loader.pitch) return callback(new LoaderLoadingError(`Module '${loader.path}' is not a loader (must have normal or pitch function)`));
      callback();
  }
@@ -4630,7 +4619,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const decoder = new TextDecoder();
  function utf8BufferToString(buf) {
      const isShared = buf.buffer instanceof SharedArrayBuffer || buf.buffer.constructor?.name === 'SharedArrayBuffer';
-@@ -58996,7 +59006,7 @@ function extractLoaderName(loaderPath, cwd = '') {
+@@ -58996,7 +58997,7 @@ function extractLoaderName(loaderPath, cwd = '') {
      }
      return res;
  }
@@ -4639,7 +4628,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const LOADER_PROCESS_NAME = 'Loader Analysis';
  function createLoaderObject(loader, compiler) {
      const obj = {
-@@ -60391,9 +60401,9 @@ class HotModuleReplacementPlugin extends RspackBuiltinPlugin {
+@@ -60391,9 +60392,9 @@ class HotModuleReplacementPlugin extends RspackBuiltinPlugin {
  const HttpExternalsRspackPlugin = base_create(external_rspack_wasi_browser_js_BuiltinPluginName.HttpExternalsRspackPlugin, (webAsync)=>({
          webAsync
      }));
@@ -4652,7 +4641,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const defaultHttpClientForBrowser = async (url, headers)=>{
      const res = await fetch(url, {
          headers
-@@ -60477,8 +60487,8 @@ const getPluginHooks = (compilation)=>{
+@@ -60477,8 +60478,8 @@ const getPluginHooks = (compilation)=>{
  const cleanPluginHooks = (compilation)=>{
      hooks_compilationHooksMap.delete(compilation);
  };
@@ -4663,7 +4652,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  let HTML_PLUGIN_UID = 0;
  const HtmlRspackPluginImpl = base_create(external_rspack_wasi_browser_js_BuiltinPluginName.HtmlRspackPlugin, function(c = {}) {
      const uid = HTML_PLUGIN_UID++;
-@@ -61048,7 +61058,7 @@ const SizeLimitsPlugin = base_create(external_rspack_wasi_browser_js_BuiltinPlug
+@@ -61048,7 +61049,7 @@ const SizeLimitsPlugin = base_create(external_rspack_wasi_browser_js_BuiltinPlug
      };
  });
  const SourceMapDevToolPlugin = base_create(external_rspack_wasi_browser_js_BuiltinPluginName.SourceMapDevToolPlugin, (options)=>options, 'compilation');
@@ -4672,7 +4661,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const SubresourceIntegrityPlugin_PLUGIN_NAME = 'SubresourceIntegrityPlugin';
  const NATIVE_HTML_PLUGIN = 'HtmlRspackPlugin';
  const HTTP_PROTOCOL_REGEX = /^https?:/;
-@@ -61197,7 +61207,7 @@ function getTagSrc(tag) {
+@@ -61197,7 +61198,7 @@ function getTagSrc(tag) {
      }
  }
  function computeIntegrity(hashFuncNames, source) {
@@ -4681,7 +4670,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
      const result = hashFuncNames.map((hashFuncName)=>`${hashFuncName}-${createHash(hashFuncName).update('string' == typeof source ? SubresourceIntegrityPlugin_Buffer.from(source, 'utf-8') : source).digest('base64')}`).join(' ');
      return result;
  }
-@@ -61649,7 +61659,7 @@ const mergeSingleValue = (a, b, internalCaching)=>{
+@@ -61649,7 +61650,7 @@ const mergeSingleValue = (a, b, internalCaching)=>{
              throw new Error('Not implemented');
      }
  };
@@ -4690,7 +4679,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  function _define_property(obj, key, value) {
      if (key in obj) Object.defineProperty(obj, key, {
          value: value,
-@@ -62341,7 +62351,7 @@ const browserslistTargetHandler_resolve = (browsers)=>{
+@@ -62341,7 +62342,7 @@ const browserslistTargetHandler_resolve = (browsers)=>{
          require: nodeProperty
      };
  };
@@ -4699,7 +4688,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const getBrowserslistTargetHandler = memoize(()=>browserslistTargetHandler_namespaceObject);
  const hasBrowserslistConfig = (context)=>Boolean(findConfig(context));
  const getDefaultTarget = (context)=>hasBrowserslistConfig(context) ? 'browserslist' : 'web';
-@@ -62635,7 +62645,7 @@ const mergeTargetProperties = (targetProperties)=>{
+@@ -62635,7 +62636,7 @@ const mergeTargetProperties = (targetProperties)=>{
      return result;
  };
  const getTargetsProperties = (targets, context)=>mergeTargetProperties(targets.map((t)=>getTargetProperties(t, context)));
@@ -4708,7 +4697,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const ERROR_PREFIX = 'Invalid Rspack configuration:';
  const applyRspackOptionsDefaults = (options)=>{
      F(options, 'context', ()=>defaults_process.cwd());
-@@ -63473,7 +63483,7 @@ const A = (obj, prop, factory)=>{
+@@ -63473,7 +63474,7 @@ const A = (obj, prop, factory)=>{
      }
  };
  const getPnpDefault = ()=>!!defaults_process.versions.pnp;
@@ -4717,7 +4706,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const normalizeIgnoreWarnings = (ignoreWarnings)=>{
      if (!ignoreWarnings) return;
      return ignoreWarnings.map((ignore)=>{
-@@ -64072,7 +64082,7 @@ class ExecuteModulePlugin {
+@@ -64072,7 +64073,7 @@ class ExecuteModulePlugin {
              const map = compiler.__internal__get_module_execution_results_map();
              map.clear();
              compilation.hooks.executeModule.tap('executeModule', (options, context)=>{
@@ -4726,7 +4715,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
                  const moduleObject = options.moduleObject;
                  const source = options.codeGenerationResult.get("javascript");
                  if (void 0 === source) return;
-@@ -64169,7 +64179,7 @@ const mkdirp = (fs, p, callback)=>{
+@@ -64169,7 +64170,7 @@ const mkdirp = (fs, p, callback)=>{
          callback();
      });
  };
@@ -4735,7 +4724,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const BUFFER_SIZE = 1000;
  const ASYNC_NOOP = async ()=>{};
  const NOOP_FILESYSTEM = {
-@@ -65033,7 +65043,7 @@ class ArrayQueue {
+@@ -65033,7 +65034,7 @@ class ArrayQueue {
      }
  }
  const util_ArrayQueue = ArrayQueue;
@@ -4744,7 +4733,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  class MultiCompiler {
      compilers;
      dependencies;
-@@ -65521,7 +65531,7 @@ class NodeWatchFileSystem {
+@@ -65521,7 +65522,7 @@ class NodeWatchFileSystem {
          if ('object' != typeof options) throw new Error("Invalid arguments: 'options'");
          if ('function' != typeof callbackUndelayed && callbackUndelayed) throw new Error("Invalid arguments: 'callbackUndelayed'");
          const oldWatcher = this.watcher;
@@ -4753,7 +4742,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
          this.watcher = new Watchpack(options);
          if (callbackUndelayed) this.watcher?.once('change', callbackUndelayed);
          const fetchTimeInfo = ()=>{
-@@ -65733,8 +65743,8 @@ function nodeConsole({ colors, appendOnly, stream }) {
+@@ -65733,8 +65734,8 @@ function nodeConsole({ colors, appendOnly, stream }) {
          }
      };
  }
@@ -4764,7 +4753,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  class NodeEnvironmentPlugin {
      options;
      constructor(options){
-@@ -68270,7 +68280,7 @@ function validateRspackConfig(config) {
+@@ -68270,7 +68271,7 @@ function validateRspackConfig(config) {
      validateSplitChunks(config);
      validateExternalUmd(config);
  }
@@ -4773,7 +4762,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  function createMultiCompiler(options) {
      const compilers = options.map(createCompiler);
      const compiler = new MultiCompiler(compilers, options);
-@@ -68456,7 +68466,7 @@ const createHtmlPluginHooksRegisters = (getCompiler, createTap)=>{
+@@ -68456,7 +68457,7 @@ const createHtmlPluginHooksRegisters = (getCompiler, createTap)=>{
          })
      };
  };
@@ -4782,7 +4771,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  class CodeGenerationResult {
      #inner;
      constructor(result){
-@@ -68924,7 +68934,7 @@ const createContextModuleFactoryHooksRegisters = (getCompiler, createTap)=>({
+@@ -68924,7 +68925,7 @@ const createContextModuleFactoryHooksRegisters = (getCompiler, createTap)=>({
              };
          })
      });
@@ -4791,7 +4780,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const createJavaScriptModulesHooksRegisters = (getCompiler, createTap)=>({
          registerJavascriptModulesChunkHashTaps: createTap(rspack_wasi_browser.RegisterJsTapKind.JavascriptModulesChunkHash, function() {
              return JavascriptModulesPlugin.getCompilationHooks(getCompiler().__internal__get_compilation()).chunkHash;
-@@ -69001,7 +69011,7 @@ const createNormalModuleFactoryHooksRegisters = (getCompiler, createTap, createM
+@@ -69001,7 +69002,7 @@ const createNormalModuleFactoryHooksRegisters = (getCompiler, createTap, createM
              };
          })
      });
@@ -4800,7 +4789,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const checkVersion = ()=>{};
  const VirtualModulesPlugin_PLUGIN_NAME = 'VirtualModulesPlugin';
  const VFILES_BY_COMPILER = new WeakMap();
-@@ -69063,7 +69073,7 @@ function notifyJsWatchers(compiler, fullPath, time) {
+@@ -69063,7 +69064,7 @@ function notifyJsWatchers(compiler, fullPath, time) {
  function isNodeWatchFileSystem(fs) {
      return 'watch' in fs;
  }
@@ -4809,7 +4798,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  class Watching {
      watcher;
      pausedWatcher;
-@@ -69809,7 +69819,7 @@ class Compiler {
+@@ -69809,7 +69810,7 @@ class Compiler {
          const rawOptions = getRawOptions(options, this);
          rawOptions.__references = Object.fromEntries(this.#ruleSet.builtinReferences.entries());
          rawOptions.__virtual_files = VirtualModulesPlugin.__internal__take_virtual_files(this);
@@ -4818,7 +4807,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
          this.#registers = this.#createHooksRegisters();
          const inputFileSystem = this.inputFileSystem && ThreadsafeInputNodeFS.needsBinding(options.experiments.useInputFileSystem) ? ThreadsafeInputNodeFS.__to_binding(this.inputFileSystem) : void 0;
          try {
-@@ -70131,7 +70141,7 @@ class DllManifestError extends lib_WebpackError {
+@@ -70131,7 +70132,7 @@ class DllManifestError extends lib_WebpackError {
          this.message = `Dll manifest ${filename}\n${message}`;
      }
  }
@@ -4827,7 +4816,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  class EnvironmentPlugin {
      keys;
      defaultValues;
-@@ -70451,7 +70461,7 @@ class SharePlugin {
+@@ -70451,7 +70452,7 @@ class SharePlugin {
          }).apply(compiler);
      }
  }
@@ -4836,7 +4825,7 @@ index e89613c3af711af8d3adc2ccc7c68281af0a3378..4b443168f13ad66e647dba7cc5814480
  const MANIFEST_FILE_NAME = 'mf-manifest.json';
  const STATS_FILE_NAME = 'mf-stats.json';
  const LOCAL_BUILD_VERSION = 'local';
-@@ -71237,7 +71247,7 @@ function getDefaultEntryRuntime(paths, options, compiler, treeShakingShareFallba
+@@ -71237,7 +71238,7 @@ function getDefaultEntryRuntime(paths, options, compiler, treeShakingShareFallba
          `const __module_federation_share_strategy__ = ${JSON.stringify(options.shareStrategy ?? 'version-first')}`,
          `const __module_federation_share_fallbacks__ = ${JSON.stringify(treeShakingShareFallbacks)}`,
          `const __module_federation_library_type__ = ${JSON.stringify(libraryType)}`,
