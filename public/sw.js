@@ -52,6 +52,7 @@ self.addEventListener('message', (event) => {
   const { type, payload } = event.data || {}
 
   if (type === 'INIT_MESSAGE_PORT') {
+    console.log('[SW] Initializing MessagePort')
     messagePort = event.ports[0]
     messagePort.onmessage = (e) => {
       const { type: msgType, payload: msgPayload } = e.data
@@ -67,32 +68,6 @@ self.addEventListener('message', (event) => {
     console.log('[SW] MessagePort initialized')
   }
 })
-
-async function fetchFromMainThread(distPath) {
-  if (!messagePort) {
-    console.log('[SW] MessagePort not available')
-    return null
-  }
-
-  const requestId = ++requestIdCounter
-
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => {
-      pendingRequests.delete(requestId)
-      resolve(null)
-    }, 5000)
-
-    pendingRequests.set(requestId, (content) => {
-      clearTimeout(timeout)
-      resolve(content)
-    })
-
-    messagePort.postMessage({
-      type: 'GET_BUILD_FILE',
-      payload: { path: distPath, requestId }
-    })
-  })
-}
 
 self.addEventListener('install', (event) => {
   self.skipWaiting()
@@ -166,3 +141,29 @@ self.addEventListener('fetch', (event) => {
     })()
   )
 })
+
+async function fetchFromMainThread(distPath) {
+  if (!messagePort) {
+    console.log('[SW] MessagePort not available')
+    return null
+  }
+
+  const requestId = ++requestIdCounter
+
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      pendingRequests.delete(requestId)
+      resolve(null)
+    }, 5000)
+
+    pendingRequests.set(requestId, (content) => {
+      clearTimeout(timeout)
+      resolve(content)
+    })
+
+    messagePort.postMessage({
+      type: 'GET_BUILD_FILE',
+      payload: { path: distPath, requestId }
+    })
+  })
+}

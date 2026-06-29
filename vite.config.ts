@@ -12,7 +12,7 @@ export default defineConfig({
   base,
   plugins: [
     react(),
-    vitePluginCOI()
+    // vitePluginCOI()
   ],
   resolve: {
     alias: {

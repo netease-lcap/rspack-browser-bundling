@@ -76,9 +76,8 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
 
-    const initMessagePort = () => {
-      if (!navigator.serviceWorker.controller) return
-      console.log('[App] Initializing MessagePort with SW controller')
+    const initMessagePort = (sw: ServiceWorker) => {
+      console.log('[App] Initializing MessagePort with SW:', sw.scriptURL)
       const channel = new MessageChannel()
       messagePortRef.current = channel.port1
 
@@ -97,34 +96,39 @@ const App: React.FC = () => {
         }
       }
 
-      navigator.serviceWorker.controller.postMessage({ type: 'INIT_MESSAGE_PORT' }, [channel.port2])
+      sw.postMessage({ type: 'INIT_MESSAGE_PORT' }, [channel.port2])
     }
 
     // @ts-ignore
-    navigator.serviceWorker.register(`${__APP_BASE__}sw.js`, { scope: `${__APP_BASE__}` })
+    navigator.serviceWorker.register(`${__APP_BASE__}sw.js`, { scope: `${__APP_BASE__}preview/` })
       .then(async (registration) => {
+        // 等待 SW 激活
         await navigator.serviceWorker.ready
 
-        if (!navigator.serviceWorker.controller) {
-          console.log('[App] Waiting for SW to take control...')
-          await new Promise<void>((resolve) => {
-            navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true })
-          })
+        // 获取 active 状态的 SW，不依赖 controller（因为当前页面可能不在 SW scope 内）
+        const activeSw = registration.active
+        if (activeSw) {
+          console.log('[App] SW is active, initializing MessagePort directly')
+          initMessagePort(activeSw)
         }
 
-        initMessagePort()
-
-        // SW 更新后（skipWaiting + clients.claim）会再次触发 controllerchange，
-        // 此时需要向新 SW 重新发送 INIT_MESSAGE_PORT，否则新 SW 没有 messagePort 无法服务文件。
-        navigator.serviceWorker.addEventListener('controllerchange', initMessagePort)
+        // 监听 SW 更新
+        registration.addEventListener('updatefound', () => {
+          const newSw = registration.installing
+          if (newSw) {
+            console.log('[App] New SW found, waiting for activation...')
+            newSw.addEventListener('statechange', () => {
+              if (newSw.state === 'activated') {
+                console.log('[App] New SW activated, re-initializing MessagePort')
+                initMessagePort(newSw)
+              }
+            })
+          }
+        })
       })
       .catch((error) => {
         console.error('[App] SW registration failed:', error)
       })
-
-    return () => {
-      navigator.serviceWorker.removeEventListener('controllerchange', initMessagePort)
-    }
   }, [])
 
   useEffect(() => {
