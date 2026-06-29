@@ -101,7 +101,7 @@ const App: React.FC = () => {
     }
 
     // @ts-ignore
-    navigator.serviceWorker.register(`${__APP_BASE__}sw.js`, { scope: __APP_BASE__ })
+    navigator.serviceWorker.register(`${__APP_BASE__}sw.js`, { scope: `${__APP_BASE__}` })
       .then(async (registration) => {
         await navigator.serviceWorker.ready
 
@@ -263,7 +263,7 @@ const App: React.FC = () => {
                 {distFiles ? (
                   <iframe
                     ref={previewIframeRef}
-                    src="/preview/"
+                    src={`${__APP_BASE__}preview/`}
                     className="w-full h-full border-0"
                     title="HMR Preview"
                   />

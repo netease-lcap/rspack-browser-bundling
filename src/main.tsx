@@ -12,7 +12,8 @@ if (!container) {
 const root = createRoot(container);
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
+    {  /* @ts-ignore */ }
+    <BrowserRouter basename={__APP_BASE__}>
       <AppRoutes />
     </BrowserRouter>
   </React.StrictMode>

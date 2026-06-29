@@ -162,7 +162,7 @@ function createRspackConfig(files: FileSystem): RspackConfig {
     output: {
       path: '/dist',
       // Ensure this matches the service worker scope
-      publicPath: '/preview/',
+      publicPath: `${__APP_BASE__}preview/`,
       filename: '[name].[chunkhash:8].js',
       chunkFilename: '[name].[chunkhash:8].js',
       hotUpdateChunkFilename: '[id].[fullhash].hot-update.js',

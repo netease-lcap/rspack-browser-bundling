@@ -1,3 +1,5 @@
+const BaseREG = new RegExp(`^(\/rspack-browser-bundling\/|\/)?preview/`)
+
 const MIME_TYPES = {
   js: 'application/javascript',
   mjs: 'application/javascript',
@@ -25,15 +27,15 @@ function getMimeType(path) {
 }
 
 function mapPreviewToDist(path) {
-  if (path.startsWith('/preview/')) {
-
+  if (BaseREG.test(path)) {
     // 没有指定具体文件类型时，默认返回 index.html
     if (!path.includes('.')) {
       return '/dist/index.html'
     }
 
-    return '/dist/' + path.slice('/preview/'.length)
+    return '/dist/' + path.replace(BaseREG, '')
   }
+
   return path
 }
 
@@ -112,7 +114,9 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
   const pathname = url.pathname
 
-  if (!pathname.startsWith('/preview/')) {
+  console.log('[SW] Fetch event for:', pathname)
+
+  if (!BaseREG.test(pathname)) {
     if (event.request.url.startsWith('http://minio-api.codewave-test.163yun.com/lowcode-static/packages') 
       || event.request.url.startsWith('https://minio-api.codewave-test.163yun.com/lowcode-static/packages')
     ) {
