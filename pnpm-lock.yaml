@@ -19,9 +19,6 @@ importers:
       '@rspack/browser':
         specifier: 2.0.5
         version: 2.0.5(patch_hash=o2rdociiaytxk43erfxeq3mzpe)(tslib@2.8.1)
-      '@types/react-router-dom':
-        specifier: ^5.3.3
-        version: 5.3.3
       '@webcontainer/api':
         specifier: latest
         version: 1.6.4
@@ -47,6 +44,9 @@ importers:
       '@types/react-dom':
         specifier: ^18.2.18
         version: 18.3.7(@types/react@18.3.28)
+      '@types/react-router-dom':
+        specifier: ^5.3.3
+        version: 5.3.3
       '@unocss/reset':
         specifier: ^0.58.3
         version: 0.58.9
