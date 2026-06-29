@@ -100,7 +100,8 @@ const App: React.FC = () => {
       navigator.serviceWorker.controller.postMessage({ type: 'INIT_MESSAGE_PORT' }, [channel.port2])
     }
 
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    // @ts-ignore
+    navigator.serviceWorker.register(`${__APP_BASE__}sw.js`, { scope: __APP_BASE__ })
       .then(async (registration) => {
         await navigator.serviceWorker.ready
 
