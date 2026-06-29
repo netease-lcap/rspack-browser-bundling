@@ -149,6 +149,8 @@ function updateFileInMemfs(path: string, content: string): void {
  * Create Rspack configuration with HMR enabled
  */
 function createRspackConfig(files: FileSystem): RspackConfig {
+  const publicPath = `${__APP_BASE__}preview/`;
+
   return {
     mode: 'development',
     devtool: false,
@@ -162,7 +164,7 @@ function createRspackConfig(files: FileSystem): RspackConfig {
     output: {
       path: '/dist',
       // Ensure this matches the service worker scope
-      publicPath: `${__APP_BASE__}preview/`,
+      publicPath,
       filename: '[name].[chunkhash:8].js',
       chunkFilename: '[name].[chunkhash:8].js',
       hotUpdateChunkFilename: '[id].[fullhash].hot-update.js',
@@ -202,6 +204,7 @@ function createRspackConfig(files: FileSystem): RspackConfig {
               loader: '/LOADER/rspack-vue-loader.js',
               options: {
                 compiler: 'vue/compiler-sfc',
+                hmr: true,
               },
             },
           ],
@@ -240,7 +243,7 @@ function createRspackConfig(files: FileSystem): RspackConfig {
     plugins: [
       new DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify('development'),
-        'process.env.BASE_URL': JSON.stringify('/'),
+        'process.env.BASE_URL': JSON.stringify(publicPath),
       }),
       new HtmlRspackPlugin({
         template: '/index.html',

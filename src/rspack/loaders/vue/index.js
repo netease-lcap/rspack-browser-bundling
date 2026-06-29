@@ -4,6 +4,109 @@
 import { builtinMemFs } from '@rspack/browser'; 
 import * as compiler from 'vue/compiler-sfc'
 
+export default function loader(source) {
+  let options = this.getOptions() || {};
+
+  const filename = this.resourcePath.replace(/\?.*$/, '');
+  const { descriptor, errors } = compiler.parse(source, {
+    filename,
+    sourceMap: false,
+    templateParseOptions: options.compilerOptions || {},
+  })
+  
+  if (errors.length) {
+    console.error("Vue Loader - Parse errors:", errors);
+    errors.forEach(err => this.emitError(err));
+    return '';
+  }
+
+  // 生成唯一的 scope id
+  const scopeId = 'data-v-' + hashCode(filename);
+  
+  const hasTemplate = !!descriptor.template;
+  const hasScriptSetup = !!descriptor.scriptSetup;
+
+  // 对于 script setup + template，使用 inlineTemplate 选项
+  // 让 compileScript 自动处理模板编译
+  let code = '';
+  
+  // 添加注释说明
+  code += `/* Vue Component compiled by browser vue-loader */\n`;
+  code += `/* Source: ${filename} */\n\n`;
+
+  // 先处理样式
+  const styleResult = genStyleCode(descriptor, scopeId, filename, this);
+  if (styleResult.imports.length > 0) {
+    code += styleResult.imports.join('\n') + '\n\n';
+  }
+
+  if (hasScriptSetup && hasTemplate) {
+    // Script Setup + Template: 使用 inlineTemplate 让 compileScript 处理一切
+    try {
+      const script = compiler.compileScript(descriptor, {
+        id: scopeId,
+        isProd: options.isProd || false,
+        inlineTemplate: true, // 自动内联模板编译
+        templateOptions: {
+          scoped: descriptor.styles.some(s => s.scoped),
+          compilerOptions: options.compilerOptions || {},
+        },
+      });
+
+      // 转换 export default 为变量赋值
+      let content = script.content;
+      content = content.replace(/\nexport default\s+/, '\nconst __default__ = ');
+      if (!content.includes('const __default__')) {
+        content += '\nconst __default__ = {};';
+      }
+
+      code += content + '\n\n';
+      code += `__default__.__scopeId = "${scopeId}";\n`;
+      code += `__default__.__file = ${JSON.stringify(filename)};\n\n`;
+      if (options.hmr) {
+        code += genHmrCode(scopeId) + '\n\n';
+      }
+      code += `export default __default__;\n`;
+      
+    } catch (e) {
+      console.error('Script compilation with inline template error:', e);
+      code += 'export default {};\n';
+    }
+  } else {
+    // 传统方式：分别编译 script 和 template
+    const scriptCode = genScriptCode(descriptor, scopeId, options, hasTemplate);
+    const templateCode = genTemplateCode(descriptor, scopeId, options);
+
+    code += scriptCode + '\n\n';
+    if (templateCode) {
+      code += templateCode + '\n\n';
+    }
+
+    // 组装组件
+    if (templateCode) {
+      code += `
+// 组装组件
+__default__.render = render;
+__default__.__scopeId = "${scopeId}";
+__default__.__file = ${JSON.stringify(filename)};
+${options.hmr ? genHmrCode(scopeId) : ''}
+
+export default __default__;
+`;
+    } else {
+      code += `
+__default__.__scopeId = "${scopeId}";
+__default__.__file = ${JSON.stringify(filename)};
+${options.hmr ? genHmrCode(scopeId) : ''}
+
+export default __default__;
+`;
+    }
+  }
+  
+  return code;
+}
+
 function genScriptCode(descriptor, scopeId, options, hasTemplate) {
   if (!descriptor.script && !descriptor.scriptSetup) {
     return 'const __default__ = {}';
@@ -120,107 +223,6 @@ function genStyleCode(descriptor, scopeId, filename, loaderContext) {
   });
 
   return { imports, files };
-}
-
-export default function loader(source) {
-  let options = this.getOptions() || {};
-
-  const filename = this.resourcePath.replace(/\?.*$/, '');
-  const { descriptor, errors } = compiler.parse(source, {
-    filename,
-    sourceMap: false,
-    templateParseOptions: options.compilerOptions || {},
-  })
-  
-  if (errors.length) {
-    console.error("Vue Loader - Parse errors:", errors);
-    errors.forEach(err => this.emitError(err));
-    return '';
-  }
-
-  // 生成唯一的 scope id
-  const scopeId = 'data-v-' + hashCode(filename);
-  
-  const hasTemplate = !!descriptor.template;
-  const hasScriptSetup = !!descriptor.scriptSetup;
-
-  // 对于 script setup + template，使用 inlineTemplate 选项
-  // 让 compileScript 自动处理模板编译
-  let code = '';
-  
-  // 添加注释说明
-  code += `/* Vue Component compiled by browser vue-loader */\n`;
-  code += `/* Source: ${filename} */\n\n`;
-
-  // 先处理样式
-  const styleResult = genStyleCode(descriptor, scopeId, filename, this);
-  if (styleResult.imports.length > 0) {
-    code += styleResult.imports.join('\n') + '\n\n';
-  }
-
-  if (hasScriptSetup && hasTemplate) {
-    // Script Setup + Template: 使用 inlineTemplate 让 compileScript 处理一切
-    try {
-      const script = compiler.compileScript(descriptor, {
-        id: scopeId,
-        isProd: options.isProd || false,
-        inlineTemplate: true, // 自动内联模板编译
-        templateOptions: {
-          scoped: descriptor.styles.some(s => s.scoped),
-          compilerOptions: options.compilerOptions || {},
-        },
-      });
-
-      // 转换 export default 为变量赋值
-      let content = script.content;
-      content = content.replace(/\nexport default\s+/, '\nconst __default__ = ');
-      if (!content.includes('const __default__')) {
-        content += '\nconst __default__ = {};';
-      }
-
-      code += content + '\n\n';
-      code += `__default__.__scopeId = "${scopeId}";\n`;
-      code += `__default__.__file = ${JSON.stringify(filename)};\n\n`;
-      code += genHmrCode(scopeId) + '\n\n';
-      code += `export default __default__;\n`;
-      
-    } catch (e) {
-      console.error('Script compilation with inline template error:', e);
-      code += 'export default {};\n';
-    }
-  } else {
-    // 传统方式：分别编译 script 和 template
-    const scriptCode = genScriptCode(descriptor, scopeId, options, hasTemplate);
-    const templateCode = genTemplateCode(descriptor, scopeId, options);
-
-    code += scriptCode + '\n\n';
-    if (templateCode) {
-      code += templateCode + '\n\n';
-    }
-
-    // 组装组件
-    if (templateCode) {
-      code += `
-// 组装组件
-__default__.render = render;
-__default__.__scopeId = "${scopeId}";
-__default__.__file = ${JSON.stringify(filename)};
-${genHmrCode(scopeId)}
-
-export default __default__;
-`;
-    } else {
-      code += `
-__default__.__scopeId = "${scopeId}";
-__default__.__file = ${JSON.stringify(filename)};
-${genHmrCode(scopeId)}
-
-export default __default__;
-`;
-    }
-  }
-  
-  return code;
 }
 
 // HMR 注入代码
