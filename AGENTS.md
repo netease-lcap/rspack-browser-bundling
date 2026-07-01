@@ -17,7 +17,7 @@ pnpm build
 pnpm preview
 ```
 
-**Note**: This project has **no linting or testing scripts**. It's a demo project focused on showcasing browser-based bundling capabilities. TypeScript is configured for type checking only (`noEmit: true`).
+**No linting or testing infrastructure exists**. TypeScript is configured for type checking only (`noEmit: true`).
 
 ---
 
@@ -28,20 +28,18 @@ rspack-browser-bundling/
 ├── index.html              # Main HTML entry point
 ├── vite.config.ts          # Vite build configuration (TypeScript)
 ├── tsconfig.json           # TypeScript compiler options
-├── uno.config.ts           # UnoCSS styling configuration
 ├── package.json            # Dependencies and scripts
 └── src/
     ├── main.tsx            # React app entry point
     ├── types.ts            # TypeScript type definitions
-    ├── files.ts            # Virtual file system data
     ├── utils/
-    │   └── helpers.ts      # Utility functions
+    │   ├── helpers.ts      # Utility functions
+    │   └── rspack-bundler.ts  # Rspack bundling logic
     ├── components/         # React components (TypeScript + JSX)
-    │   ├── App.tsx         # Main application (493 lines)
+    │   ├── App.tsx         # Main application
     │   ├── MonacoEditor.tsx
     │   ├── FileTree.tsx
-    │   ├── OperationPanel.tsx
-    │   └── ...
+    │   └── OperationPanel.tsx
     └── rspack/             # Custom loaders/plugins (JavaScript)
         ├── loaders/vue/
         └── plugins/
@@ -64,11 +62,10 @@ rspack-browser-bundling/
 ### Key Technologies
 - **Framework**: React 18 with TypeScript 5.3.3
 - **Build Tool**: Vite 5.0 (dev server) + `@rspack/browser` (in-browser bundling)
-- **Styling**: UnoCSS with atomic CSS utilities
 - **Editor**: Monaco Editor (VS Code editor engine)
 - **Package Manager**: pnpm (required)
 - **Module System**: ES Modules exclusively (`"type": "module"`)
-- **Bundler**: `@rspack/browser` 1.0.0 (browser-compatible Rspack via WASM)
+- **Bundler**: `@rspack/browser` 2.0.5 (browser-compatible Rspack via WASM)
 
 ---
 
@@ -162,37 +159,6 @@ const MAX_FILE_SIZE = 1024 * 1024
 <div className="flex h-screen w-screen flex-col overflow-hidden">
 ```
 
-### Error Handling
-
-**Use try-catch-finally** with proper typing:
-```typescript
-try {
-  const stats = await compiler.run()
-  // Process results
-} catch (error: any) {  // or (error: unknown) with type narrowing
-  console.error('打包错误:', error)
-  setBuildOutput('打包失败\n\n' + error.message)
-  showMessage('❌ 打包失败: ' + error.message, 'error')
-} finally {
-  setIsBundling(false)
-}
-```
-
-### UnoCSS Styling
-
-**Use atomic utility classes** instead of custom CSS:
-```typescript
-// ✅ Good - UnoCSS utilities
-<div className="flex flex-col h-full overflow-hidden">
-<button className="btn-primary px-4 py-2 rounded">
-
-// ✅ Use shortcuts defined in uno.config.ts
-<button className="btn-primary">  // Expands to predefined classes
-
-// ❌ Avoid inline styles
-<div style={{ display: 'flex' }}>
-```
-
 ### Comments
 
 ```typescript
@@ -268,11 +234,11 @@ if (builtinMemFs.fs.existsSync(path)) { ... }
 
 ### Vite Configuration
 
-Key settings in `vite.config.js`:
+Key settings in `vite.config.ts`:
 - **Port**: 3000 with auto-open
-- **Headers**: COOP/COEP for SharedArrayBuffer support
-- **Exclude from optimization**: `@rspack/browser`
-- **Build target**: `esnext`, minify disabled
+- **Exclude from optimization**: `@rspack/browser`, `@monaco-editor/react`
+- **Build target**: `esnext`, minify enabled
+- **Base path**: `/rspack-browser-bundling/` (for GitHub Pages)
 
 ### Rspack Configuration (Browser)
 

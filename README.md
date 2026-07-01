@@ -16,16 +16,15 @@
 - 📁 **文件树视图**: 可视化展示虚拟项目的文件结构
 - 🔍 **文件列表**: 查看所有打包生成的文件及其大小
 
-> **⚠️ 架构变更说明**: 
+> **⚠️ 架构说明**: 
 > 
-> 本项目已从纯 JavaScript 架构升级到 **React + TypeScript** 架构。如果您看到 [AGENTS.md](AGENTS.md) 中提到"纯 JavaScript"、"原生 DOM"等描述，请注意这些是旧版本的说明，当前项目使用 React 18 + TypeScript 5 + UnoCSS 构建。
+> 本项目使用 **React 18 + TypeScript** 架构构建。AGENTS.md 包含详细的开发指南。
 
 ## ✨ 特性
 
 - **浏览器端打包**: 使用 `@rspack/browser` 完全在浏览器中进行编译和打包
 - **专业代码编辑器**: 集成 Monaco Editor，提供类似 VS Code 的编辑体验
 - **React + TypeScript**: 使用现代化技术栈构建 UI
-- **UnoCSS 样式**: 原子化 CSS 框架，即时编译样式
 - **Vue 3 支持**: 自定义 Vue loader 实现 .vue 单文件组件的浏览器端编译
 - **内存文件系统**: 使用 `builtinMemFs` 在内存中管理虚拟文件系统
 - **自定义插件系统**: 
@@ -45,7 +44,6 @@
 - **React 18**: UI 框架
 - **TypeScript 5.3.3**: 类型安全的开发体验
 - **Vite 5.0**: 开发服务器和构建工具
-- **UnoCSS**: 原子化 CSS 框架
 - **Monaco Editor**: 专业代码编辑器
 - **Vue 3.5.13**: 虚拟项目使用（用于演示 Vue 组件编译）
 
@@ -73,7 +71,7 @@ pnpm preview
 
 1. **启动项目**: 运行 `pnpm dev` 启动开发服务器（默认端口 3000）
 2. **编辑代码**: 使用集成的 Monaco Editor 编辑虚拟项目文件
-3. **查看文件**: 所有虚拟项目文件在 `src/files.ts` 中定义
+3. **查看文件**: 所有虚拟项目文件在 `src/files.json` 中定义
 4. **点击打包**: 点击"🔨 打包代码"按钮，Rspack 将在浏览器中编译所有文件
 5. **查看结果**: 
    - 查看打包统计（时间、大小、模块数量）
@@ -85,26 +83,13 @@ pnpm preview
 
 ### JavaScript 模块示例
 
-在 `src/files.ts` 中定义虚拟项目文件：
+在 `src/files.json` 中定义虚拟项目文件：
 
-```javascript
-export default {
-  '/src/index.js': `
-    import { add } from './math.js';
-    import { greet } from './utils.js';
-    
-    console.log('Hello from Rspack Browser!');
-    console.log('2 + 3 =', add(2, 3));
-    console.log(greet('开发者'));
-  `,
-  
-  '/src/math.js': `
-    export function add(a, b) { return a + b; }
-  `,
-  
-  '/src/utils.js': `
-    export function greet(name) { return \`你好, \${name}!\`; }
-  `
+```json
+{
+  "/src/index.js": "import { add } from './math.js';\nimport { greet } from './utils.js';\n\nconsole.log('Hello from Rspack Browser!');\nconsole.log('2 + 3 =', add(2, 3));\nconsole.log(greet('开发者'));",
+  "/src/math.js": "export function add(a, b) { return a + b; }",
+  "/src/utils.js": "export function greet(name) { return `你好, ${name}!`; }"
 }
 ```
 
@@ -112,35 +97,10 @@ export default {
 
 **是的，你可以在浏览器中使用 .vue 文件！** 项目已实现自定义 Vue loader：
 
-```javascript
-export default {
-  '/src/App.vue': `
-    <template>
-      <div class="app">
-        <h1>{{ message }}</h1>
-        <button @click="count++">点击次数: {{ count }}</button>
-      </div>
-    </template>
-    
-    <script setup>
-    import { ref } from 'vue';
-    
-    const message = ref('Hello Vue in Browser!');
-    const count = ref(0);
-    </script>
-    
-    <style scoped>
-    .app { padding: 20px; }
-    button { margin-top: 10px; }
-    </style>
-  `,
-  
-  '/src/index.js': `
-    import { createApp } from 'vue';
-    import App from './App.vue';
-    
-    createApp(App).mount('#app');
-  `
+```json
+{
+  "/src/App.vue": "<template>\n  <div class=\"app\">\n    <h1>{{ message }}</h1>\n    <button @click=\"count++\">点击次数: {{ count }}</button>\n  </div>\n</template>\n\n<script setup>\nimport { ref } from 'vue';\n\nconst message = ref('Hello Vue in Browser!');\nconst count = ref(0);\n</script>\n\n<style scoped>\n.app { padding: 20px; }\nbutton { margin-top: 10px; }\n</style>",
+  "/src/index.js": "import { createApp } from 'vue';\nimport App from './App.vue';\n\ncreateApp(App).mount('#app');"
 }
 ```
 
@@ -152,7 +112,6 @@ rspack-browser-bundling/
 ├── vite.config.ts               # Vite 配置（TypeScript）
 ├── vite-plugin-coi.js           # COI Service Worker 插件（用于 GitHub Pages）
 ├── tsconfig.json                # TypeScript 配置
-├── uno.config.ts                # UnoCSS 配置
 ├── package.json                 # 项目配置
 ├── README.md                    # 项目说明
 ├── AGENTS.md                    # AI Agent 开发指南
@@ -166,8 +125,9 @@ rspack-browser-bundling/
 │   └── coi-serviceworker.js    # Service Worker（支持 SharedArrayBuffer）
 └── src/
     ├── main.tsx                 # 主入口（React + TypeScript）
-    ├── files.ts                 # 虚拟文件系统配置
+    ├── routes.tsx               # 路由配置
     ├── types.ts                 # TypeScript 类型定义
+    ├── files.json               # 虚拟文件系统配置
     ├── styles.css               # 全局样式
     ├── components/              # React 组件
     │   ├── App.tsx              # 主应用组件
@@ -175,9 +135,18 @@ rspack-browser-bundling/
     │   ├── FileList.tsx         # 文件列表组件
     │   ├── FileTree.tsx         # 文件树组件
     │   ├── MonacoEditor.tsx     # Monaco 编辑器组件
-    │   └── OperationPanel.tsx   # 操作面板组件
+    │   ├── OperationPanel.tsx   # 操作面板组件
+    │   └── WebContainer.tsx     # WebContainer 页面组件
+    ├── hooks/                   # React Hooks
+    │   ├── useBundler.ts        # 打包逻辑 Hook
+    │   └── usePreview.ts        # 预览逻辑 Hook
+    ├── hmr/                     # HMR 热更新模块
+    │   ├── index.ts
+    │   ├── HmrServer.ts
+    │   └── types.ts
     ├── utils/
-    │   └── helpers.ts           # 工具函数
+    │   ├── helpers.ts           # 工具函数
+    │   └── rspack-bundler.ts    # Rspack 打包逻辑
     └── rspack/
         ├── loaders/
         │   └── vue/
@@ -207,7 +176,7 @@ rspack-browser-bundling/
 
 ### 虚拟文件系统
 
-- 所有虚拟项目文件定义在 `src/files.ts`（TypeScript 格式）
+- 所有虚拟项目文件定义在 `src/files.json`（JSON 格式）
 - 使用 `builtinMemFs.volume.fromJSON()` 加载到内存
 - 文件路径必须使用绝对路径（如 `/src/index.js`）
 - 支持通过 Monaco Editor 在线编辑文件内容
@@ -285,7 +254,7 @@ console.log('Cross-Origin Isolated:', window.crossOriginIsolated);
 
 ### 技术特色
 
-- **现代化 UI 架构**: 使用 React 18 + TypeScript + UnoCSS 构建
+- **现代化 UI 架构**: 使用 React 18 + TypeScript 构建
 - **完全离线**: 打包过程不依赖任何服务器
 - **WASM 驱动**: 使用 Rspack 的 WASM 编译器
 - **内存文件系统**: 所有 I/O 操作在内存中完成
@@ -312,7 +281,7 @@ console.log('Cross-Origin Isolated:', window.crossOriginIsolated);
 
 ### 项目文档
 - **[📖 文档中心](docs/README.md)** - 完整的文档索引和导航
-- [AGENTS.md](AGENTS.md) - AI 开发助手指南（⚠️ 注意：文档中描述的是旧版纯 JS 架构，当前已升级为 React + TypeScript）
+- [AGENTS.md](AGENTS.md) - AI 开发助手指南
 
 ### 核心指南
 - [Match Resource 机制详解](docs/guides/MATCH_RESOURCE_EXPLAINED.md) - 深入理解 loader 工作原理
@@ -344,8 +313,8 @@ ISC
 
 ### 开发建议
 
-1. 阅读 [AGENTS.md](AGENTS.md) 了解项目架构（⚠️ 注意：文档描述的是旧版纯 JS 架构）
-2. 实际项目使用 **React + TypeScript + UnoCSS** 技术栈
+1. 阅读 [AGENTS.md](AGENTS.md) 了解项目架构
+2. 实际项目使用 **React + TypeScript** 技术栈
 3. 主要组件位于 `src/components/` 目录
 4. 遵循 TypeScript 类型安全实践
 5. 为新功能添加文档和示例
