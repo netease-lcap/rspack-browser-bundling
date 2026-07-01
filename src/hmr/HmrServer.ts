@@ -1,29 +1,8 @@
-/**
- * HmrServer - Simulates a WebSocket server using MessagePort for HMR communication.
- *
- * This class manages HMR connections with preview iframes, forwarding Rspack
- * HMR events from the main thread to the preview iframe's HMR client.
- *
- * Architecture:
- * - Main Thread (App) -> HmrServer -> MessagePort -> Preview Iframe (HMR Client)
- *
- * Based on utoo's HMR implementation:
- * https://github.com/utooland/utoo
- */
-
 import type { HMRUpdatePayload } from '../types/hmr'
 
-// HMR Action types matching Rspack/Turbopack HMR protocol
-export enum HMR_ACTIONS_SENT_TO_BROWSER {
-  TURBOPACK_CONNECTED = 'turbopack-connected',
-  BUILDING = 'building',
+export enum BUILD_ACTIONS_SENT_TO_BROWSER {
   BUILT = 'built',
-  SYNC = 'sync',
-  PARTIAL = 'partial',
-  RESTART = 'restart',
-  NOT_FOUND = 'not-found',
-  ISSUES = 'issues',
-  RELOAD = 'reload',
+  UPDATE = 'hmr-update',
 }
 
 export interface HmrServerOptions {
@@ -41,53 +20,28 @@ export interface HmrClient {
   /** The MessagePort for this client */
   port: MessagePort
   /** Send a message to this client */
-  send: (message: HMR_ACTION_TYPES) => void
+  send: (message: BUILD_ACTION_TYPES) => void
   /** Close the connection to this client */
   close: () => void
 }
 
-// HMR Message types
-export interface TurbopackConnectedAction {
-  action: HMR_ACTIONS_SENT_TO_BROWSER.TURBOPACK_CONNECTED
-  data: { sessionId: number }
-}
-
-export interface BuildingAction {
-  action: HMR_ACTIONS_SENT_TO_BROWSER.BUILDING
-}
-
 export interface BuiltAction {
-  action: HMR_ACTIONS_SENT_TO_BROWSER.BUILT
+  action: BUILD_ACTIONS_SENT_TO_BROWSER.BUILT
   hash: string
 }
 
-export interface SyncAction {
-  action: HMR_ACTIONS_SENT_TO_BROWSER.SYNC
-  hash: string
-  errors: unknown[]
-  warnings: unknown[]
-}
-
-export interface ReloadAction {
-  action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD
-}
-
-export interface PartialUpdateAction {
-  action: HMR_ACTIONS_SENT_TO_BROWSER.PARTIAL
+export interface HMRAction {
+  action: BUILD_ACTIONS_SENT_TO_BROWSER.UPDATE
   hash: string
 }
 
-export type HMR_ACTION_TYPES =
-  | TurbopackConnectedAction
-  | BuildingAction
+export type BUILD_ACTION_TYPES =
   | BuiltAction
-  | SyncAction
-  | ReloadAction
-  | PartialUpdateAction
+  | HMRAction
 
 // Client message types
 export interface HmrClientMessage {
-  type: 'turbopack-subscribe' | 'turbopack-unsubscribe'
+  type: 'subscribe' | 'unsubscribe'
   path: string
 }
 
@@ -119,7 +73,7 @@ export class HmrServer {
     const client: HmrClient = {
       id: clientId,
       port: port1,
-      send: (message: HMR_ACTION_TYPES) => {
+      send: (message: BUILD_ACTION_TYPES) => {
         port1.postMessage(message)
       },
       close: () => {
@@ -177,10 +131,10 @@ export class HmrServer {
 
       if ('type' in message) {
         switch (message.type) {
-          case 'turbopack-subscribe':
+          case 'subscribe':
             this.subscribe(client, message.path)
             break
-          case 'turbopack-unsubscribe':
+          case 'unsubscribe':
             this.unsubscribe(client, message.path)
             break
         }
@@ -225,8 +179,8 @@ export class HmrServer {
    * Send an HMR update to all connected clients.
    */
   public sendUpdate(payload: HMRUpdatePayload) {
-    const message: PartialUpdateAction = {
-      action: HMR_ACTIONS_SENT_TO_BROWSER.PARTIAL,
+    const message: HMRAction = {
+      action: BUILD_ACTIONS_SENT_TO_BROWSER.UPDATE,
       hash: payload.hash,
     }
 
@@ -238,39 +192,13 @@ export class HmrServer {
   }
 
   /**
-   * Notify all clients that a build is starting.
-   */
-  public notifyBuilding() {
-    const message: BuildingAction = {
-      action: HMR_ACTIONS_SENT_TO_BROWSER.BUILDING,
-    }
-
-    for (const client of this.clients) {
-      client.send(message)
-    }
-  }
-
-  /**
    * Notify all clients that a build has completed.
    */
   public notifyBuilt(result: { hash: string }) {
     const { hash } = result
     let message: BuiltAction = {
-      action: HMR_ACTIONS_SENT_TO_BROWSER.BUILT,
+      action: BUILD_ACTIONS_SENT_TO_BROWSER.BUILT,
       hash,
-    }
-
-    for (const client of this.clients) {
-      client.send(message)
-    }
-  }
-
-  /**
-   * Request all clients to reload.
-   */
-  public requestReload() {
-    const message: ReloadAction = {
-      action: HMR_ACTIONS_SENT_TO_BROWSER.RELOAD,
     }
 
     for (const client of this.clients) {

@@ -28,7 +28,7 @@ import type {
 } from '../types/hmr';
 import type { FileSystem } from '../types';
 // @ts-ignore - This is a virtual module provided by the dev server
-import DevServerCode from '../rspack/dev-server/client';
+import DevServerCode from '../rspack/dev-server/client.js?raw';
 
 // ============================================================================
 // Type Definitions for Worker Context

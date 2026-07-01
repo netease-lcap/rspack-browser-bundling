@@ -1,6 +1,5 @@
 
 
-const code = `
 var port;
 if (module.hot) {
   const log = function (level, msg) {
@@ -54,7 +53,7 @@ if (module.hot) {
   function handleMessage(event) {
     console.log('[HMR] Received message from Main:', event.data);
     switch (event.data?.action) {
-      case 'partial': 
+      case 'hmr-update': 
         var currentHash = event.data.hash;
         lastHash = currentHash;
         if (!upToDate() && module.hot.status() === 'idle') {
@@ -96,6 +95,4 @@ if (module.hot) {
   log('info', '[HMR] Waiting for update signal from WDS...');
 } else {
   throw new Error('[HMR] Hot Module Replacement is disabled.');
-}`
-
-export default code;
+}

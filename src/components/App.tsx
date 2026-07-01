@@ -205,27 +205,6 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden">
-      <div className="flex-shrink-0 bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex-1" />
-          <div className="flex-1 text-center">
-            <h1 className="text-3xl font-bold">🚀 Rspack Browser Bundling</h1>
-            <p className="text-sm opacity-90 mt-1">基于 Service Worker + MessagePort HMR 的浏览器端构建工具</p>
-          </div>
-          <div className="flex-1 text-right">
-            {message && (
-              <div
-                className={`inline-block px-4 py-2 rounded-lg shadow-lg ${
-                  message.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-                }`}
-              >
-                {message.text}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
       <div className="flex flex-1 overflow-hidden">
         <div className="w-80 border-r border-gray-300 flex flex-col overflow-hidden bg-white">
           <div className="p-4 border-b border-gray-200 bg-gray-50">

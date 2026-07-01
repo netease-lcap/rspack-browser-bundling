@@ -32,7 +32,6 @@ export function useBundler(options: UseHMROptions & { initialFiles: FileSystem }
   const [status, setStatus] = useState<HMRStatus>('idle');
   const [isWatchMode, setIsWatchMode] = useState(false);
   const [isCompiling, setIsCompiling] = useState(false);
-  const [lastError, setLastError] = useState<BuildErrorPayload | null>(null);
 
   // Refs
   const bridgeRef = useRef<HMRBridgeInstance | null>(null);
@@ -71,7 +70,6 @@ export function useBundler(options: UseHMROptions & { initialFiles: FileSystem }
       case WorkerMessageType.ERROR:
         setIsCompiling(false);
         setStatus('error');
-        setLastError(payload as BuildErrorPayload);
         console.error('[HMR Worker Error]', payload);
         callbacksRef.current.onError?.(payload as BuildErrorPayload);
         break;
@@ -149,7 +147,6 @@ export function useBundler(options: UseHMROptions & { initialFiles: FileSystem }
       };
       console.error('[HMR Start Watch Error]', errorDetails);
       setStatus('error');
-      setLastError(errorDetails);
       throw error;
     }
   }, [options.initialFiles, handleWorkerMessage]);
@@ -186,25 +183,6 @@ export function useBundler(options: UseHMROptions & { initialFiles: FileSystem }
     console.log('[useBundler] UPDATE_FILE message sent to worker');
   }, []);
 
-  // Refresh (trigger rebuild)
-  const refresh = useCallback(() => {
-    if (!bridgeRef.current?.isReady) {
-      console.warn('Cannot refresh: HMR is not ready');
-      return;
-    }
-
-    setStatus('building');
-    setIsCompiling(true);
-    // Trigger rebuild by sending an update with same content
-    bridgeRef.current.postMessage({
-      type: MainThreadMessageType.UPDATE_FILE,
-      payload: {
-        path: '__refresh__',
-        content: '',
-      },
-    });
-  }, []);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -219,11 +197,9 @@ export function useBundler(options: UseHMROptions & { initialFiles: FileSystem }
     status,
     isWatchMode,
     isCompiling,
-    lastError,
     startWatch,
     stopWatch,
     updateFile,
-    refresh,
   };
 }
 
