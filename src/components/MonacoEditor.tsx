@@ -267,36 +267,46 @@ const MonacoEditor = forwardRef<MonacoEditorInstance | null, MonacoEditorProps>(
   const editorRef = useRef<any>(null)
   const [editorContent, setEditorContent] = useState<string>('')
   
-  // 使用 ref 保存最新的 activeTab，避免闭包问题
+  // 使用 ref 保存最新的 activeTab、files 和回调函数，避免闭包问题
   const activeTabRef = useRef(activeTab)
+  const filesRef = useRef(files)
+  const onSaveCurrentRef = useRef(onSaveCurrent)
+  const onContentChangeRef = useRef(onContentChange)
+  
+  // 同步 ref 值
   activeTabRef.current = activeTab
+  filesRef.current = files
+  onSaveCurrentRef.current = onSaveCurrent
+  onContentChangeRef.current = onContentChange
 
   useImperativeHandle(ref, () => editorRef.current)
 
-  // 编辑器挂载处理
+  // 编辑器挂载处理 - 只执行一次
   const handleEditorDidMount = useCallback((editor: any, monaco: any) => {
     editorRef.current = editor
 
-    // 监听内容变化
+    // 监听内容变化 - 使用 ref 获取最新回调
     editor.onDidChangeModelContent(() => {
       const content = editor.getValue()
       setEditorContent(content)
       const currentTab = activeTabRef.current
       if (currentTab) {
-        onContentChange(currentTab, content)
+        onContentChangeRef.current(currentTab, content)
       }
     })
 
-    // 添加保存快捷键 - 仅保存当前文件
+    // 添加保存快捷键 - 使用 ref 获取最新回调
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      onSaveCurrent()
+      onSaveCurrentRef.current()
     })
-  }, [onSaveCurrent, onContentChange])
+  }, []) // 空依赖数组，只在挂载时执行
 
   // 当活动标签变化时，更新编辑器内容
+  // 关键修复：只监听 activeTab，不监听 files，避免 files 变化导致编辑器重置
   useEffect(() => {
     if (editorRef.current && activeTab) {
-      const content = files[activeTab] || ''
+      // 使用 ref 获取最新的 files 内容
+      const content = filesRef.current[activeTab] || ''
       const editor = editorRef.current
       
       // 设置内容
@@ -306,10 +316,9 @@ const MonacoEditor = forwardRef<MonacoEditorInstance | null, MonacoEditorProps>(
         setEditorContent(content)
       }
     }
-  }, [activeTab, files])
+  }, [activeTab]) // 注意：这里只依赖 activeTab，不依赖 files
 
   const language = activeTab ? getFileLanguage(activeTab) : 'javascript'
-  const value = activeTab ? files[activeTab] || '' : '// 点击左侧文件进行编辑...'
   
   // 计算未保存的文件数量
   const dirtyCount = dirtyTabs.length
@@ -409,7 +418,7 @@ const MonacoEditor = forwardRef<MonacoEditorInstance | null, MonacoEditorProps>(
             height="100%"
             defaultLanguage="javascript"
             language={language}
-            value={value}
+            value={files[activeTab] || ''}
             theme="vs-dark"
             onMount={handleEditorDidMount}
             options={{
