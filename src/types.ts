@@ -1,3 +1,31 @@
+// 文件图标类型
+export type FileIconType = 
+  | 'default' 
+  | 'javascript' | 'typescript' | 'react' | 'vue'
+  | 'css' | 'scss' | 'sass' | 'less' | 'stylus'
+  | 'html' | 'xml' | 'svg'
+  | 'json' | 'yaml' | 'toml'
+  | 'markdown'
+  | 'image' | 'font'
+  | 'config' | 'database' | 'shell' | 'powershell'
+  | 'python' | 'rust' | 'go' | 'java' | 'c' | 'cpp'
+  | 'archive' | 'log' | 'lock'
+  | 'npm' | 'yarn' | 'pnpm'
+  | 'git' | 'vite' | 'webpack' | 'rollup' | 'rspack'
+  | 'babel' | 'eslint' | 'prettier'
+  | 'docker' | 'readme' | 'license' | 'changelog'
+
+export type FolderIconType = 
+  | 'folder' | 'folder-open'
+  | 'folder-src'
+  | 'folder-components'
+  | 'folder-assets'
+  | 'folder-dist'
+  | 'folder-node'
+  | 'folder-test'
+  | 'folder-config'
+  | 'folder-public'
+
 // 文件树节点类型
 export interface FileTreeNode {
   [key: string]: FileTreeNode | FileMetadata

@@ -177,11 +177,11 @@ const App: React.FC = () => {
   const handleToggleWatch = useCallback(async () => {
     if (isWatchMode) {
       stopWatch()
-      showMessage('⏹️ Watch 模式已停止', 'success')
+      showMessage('Watch 模式已停止', 'success')
     } else {
       try {
         await startWatch()
-        showMessage('▶️ Watch 模式已启动', 'success')
+        showMessage('Watch 模式已启动', 'success')
       } catch (error: any) {
         showMessage('❌ 启动 Watch 失败: ' + error.message, 'error')
       }
@@ -203,23 +203,70 @@ const App: React.FC = () => {
     }
   }, [distFiles, showMessage])
 
+  // Toast 消息组件
+  const Toast = ({ message }: { message: { text: string; type: 'success' | 'error' } | null }) => {
+    if (!message) return null
+    
+    const isSuccess = message.type === 'success'
+    
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          zIndex: 9999,
+          animation: 'slideIn 0.3s ease-out'
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '14px 18px',
+            borderRadius: '10px',
+            background: isSuccess 
+              ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
+              : 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+            color: 'white',
+            fontSize: '14px',
+            fontWeight: 500,
+            boxShadow: isSuccess
+              ? '0 10px 25px rgba(16, 185, 129, 0.35)'
+              : '0 10px 25px rgba(239, 68, 68, 0.35)',
+            minWidth: '200px'
+          }}
+        >
+          <span style={{ fontSize: '18px' }}>
+            {isSuccess ? '✓' : '✕'}
+          </span>
+          <span>{message.text}</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden">
+      {/* Toast 消息 */}
+      <Toast message={message} />
+      
       <div className="flex flex-1 overflow-hidden">
+        {/* 左侧文件树 */}
         <div className="w-80 border-r border-gray-300 flex flex-col overflow-hidden bg-white">
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg font-semibold text-gray-800">📁 项目文件</h2>
-          </div>
           <div className="flex-1 overflow-hidden">
             <FileTree files={files} onFileSelect={handleFileSelect} currentFile={currentFile} />
           </div>
         </div>
 
+        {/* 中间编辑器 */}
         <div className="flex-1 flex flex-col overflow-hidden bg-white">
           <MonacoEditor files={files} currentFile={currentFile} onSave={handleFileSave} />
         </div>
 
-        <div className="w-96 border-l border-gray-300 flex flex-col overflow-hidden bg-gray-50">
+        {/* 右侧操作面板 */}
+        <div className="w-96 border-l border-gray-300 flex flex-col overflow-hidden">
           <OperationPanel
             onToggleWatch={handleToggleWatch}
             onRun={handleRun}
@@ -229,37 +276,245 @@ const App: React.FC = () => {
             distFiles={distFiles}
           />
 
+          {/* 预览区域 */}
           {isPreviewVisible && (
-            <div className="h-full border-t border-gray-300 flex flex-col min-h-0">
-              <div className="p-2 border-b border-gray-200 bg-gray-100 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-700">
-                  🔥 HMR Preview {isHmrConnected && <span className="text-green-600">●</span>}
-                </h3>
-                <button
-                  onClick={() => setIsPreviewVisible(false)}
-                  className="text-gray-500 hover:text-gray-700 text-xs"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="flex-1 bg-white">
-                {distFiles ? (
-                  <iframe
-                    ref={previewIframeRef}
-                    src={`${__APP_BASE__}preview/`}
-                    className="w-full h-full border-0"
-                    title="HMR Preview"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500">
-                    等待构建...
+            <div 
+              className="preview-container"
+              style={{
+                height: '50%',
+                minHeight: '300px',
+                borderTop: '1px solid #E5E7EB',
+                display: 'flex',
+                flexDirection: 'column',
+                background: '#F9FAFB',
+                animation: 'slideUp 0.3s ease-out'
+              }}
+            >
+              {/* 预览工具栏 */}
+              <div 
+                className="preview-toolbar"
+                style={{
+                  padding: '12px 16px',
+                  background: 'white',
+                  borderBottom: '1px solid #E5E7EB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div 
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '6px',
+                      background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '14px'
+                    }}
+                  >
+                    🔥
                   </div>
-                )}
+                  <div>
+                    <div style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#111827'
+                    }}>
+                      HMR 预览
+                    </div>
+                    <div style={{
+                      fontSize: '11px',
+                      color: isHmrConnected ? '#10B981' : '#9CA3AF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      <span style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: isHmrConnected ? '#10B981' : '#9CA3AF',
+                        animation: isHmrConnected ? 'pulse 2s infinite' : 'none'
+                      }} />
+                      {isHmrConnected ? '已连接' : '连接中...'}
+                    </div>
+                  </div>
+                </div>
+                
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => {
+                      if (previewIframeRef.current) {
+                        previewIframeRef.current.src = previewIframeRef.current.src
+                      }
+                    }}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #E5E7EB',
+                      background: 'white',
+                      fontSize: '12px',
+                      color: '#374151',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#F9FAFB'
+                      e.currentTarget.style.borderColor = '#D1D5DB'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'white'
+                      e.currentTarget.style.borderColor = '#E5E7EB'
+                    }}
+                  >
+                    <span>↻</span>
+                    <span>刷新</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setIsPreviewVisible(false)}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: '#F3F4F6',
+                      fontSize: '14px',
+                      color: '#6B7280',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#E5E7EB'
+                      e.currentTarget.style.color = '#374151'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#F3F4F6'
+                      e.currentTarget.style.color = '#6B7280'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              
+              {/* iframe 容器 */}
+              <div 
+                className="preview-frame-container"
+                style={{
+                  flex: 1,
+                  padding: '16px',
+                  background: 'linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                {/* 装饰背景 */}
+                <div 
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundImage: `
+                      radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.03) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.03) 0%, transparent 50%)
+                    `,
+                    pointerEvents: 'none'
+                  }}
+                />
+                
+                {/* iframe 包装器 */}
+                <div 
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.15), 0 8px 20px rgba(0, 0, 0, 0.1)',
+                    background: 'white',
+                    position: 'relative'
+                  }}
+                >
+                  {distFiles ? (
+                    <iframe
+                      ref={previewIframeRef}
+                      src={`${__APP_BASE__}preview/`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        border: 'none',
+                        background: 'white'
+                      }}
+                      title="HMR Preview"
+                    />
+                  ) : (
+                    <div 
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100%',
+                        color: '#9CA3AF',
+                        gap: '12px'
+                      }}
+                    >
+                      <div style={{ fontSize: '32px' }}>⏳</div>
+                      <div style={{ fontSize: '14px' }}>等待构建完成...</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
+      
+      {/* 全局动画样式 */}
+      <style>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.7;
+            transform: scale(1.1);
+          }
+        }
+      `}</style>
     </div>
   )
 }
