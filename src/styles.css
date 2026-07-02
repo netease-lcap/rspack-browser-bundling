@@ -486,3 +486,217 @@ button:disabled {
 .file-action-btn:hover {
   opacity: 1;
 }
+
+/* ============================================
+   UI COMPONENTS - Extracted from inline styles
+   ============================================ */
+
+/* File Icon */
+.file-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Tab Item */
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  min-width: 120px;
+  max-width: 200px;
+  height: 36px;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  border-right: 1px solid #E5E7EB;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  user-select: none;
+}
+
+.tab-item.active {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%);
+  border-bottom-color: #3B82F6;
+}
+
+.tab-item-filename {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 400;
+  color: #6B7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-item.active .tab-item-filename {
+  font-weight: 600;
+  color: #111827;
+}
+
+.tab-item-dirty-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #F59E0B;
+  flex-shrink: 0;
+}
+
+.tab-item-close {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #6B7280;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.tab-item-close.hovered,
+.tab-item:hover .tab-item-close {
+  opacity: 1;
+  background: #E5E7EB;
+}
+
+.tab-item-close:hover {
+  background-color: #DC2626 !important;
+  color: white !important;
+}
+
+/* Save All Button */
+.save-all-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.save-all-button.disabled {
+  background: #F3F4F6;
+  color: #9CA3AF;
+  box-shadow: none;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.save-all-button.hovered:not(.disabled) {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+.save-all-count {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Monaco Editor Container */
+.monaco-editor-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tabs Bar */
+.tabs-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(180deg, #F9FAFB 0%, #F3F4F6 100%);
+  border-bottom: 1px solid #E5E7EB;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.tabs-list {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.tabs-actions {
+  padding: 0 12px;
+  border-left: 1px solid #E5E7EB;
+  background: linear-gradient(180deg, #F9FAFB 0%, #F3F4F6 100%);
+}
+
+/* Editor Header Empty */
+.editor-header-empty {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%);
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.editor-header-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-header-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6B7280;
+}
+
+/* Editor Content */
+.editor-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Editor Empty State */
+.editor-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #1E1E1E;
+  color: #6B7280;
+  gap: 16px;
+}
+
+.editor-empty-icon {
+  font-size: 48px;
+  opacity: 0.5;
+}
+
+.editor-empty-title {
+  font-size: 14px;
+}
+
+.editor-empty-subtitle {
+  font-size: 12px;
+  opacity: 0.7;
+}
