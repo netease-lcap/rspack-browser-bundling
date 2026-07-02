@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react'
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 
 import FileTree from './FileTree'
 import MonacoEditor from './MonacoEditor'
@@ -12,7 +12,12 @@ import type { BuildEndPayload } from '../types/hmr'
 
 const App: React.FC = () => {
   const [files, setFiles] = useState<FileSystem>({ ...filesData })
-  const [currentFile, setCurrentFile] = useState<string | null>(null)
+  
+  // 多标签页状态
+  const [openTabs, setOpenTabs] = useState<string[]>([])
+  const [activeTab, setActiveTab] = useState<string | null>(null)
+  // 记录每个标签页的未保存内容
+  const [tabContents, setTabContents] = useState<Record<string, string>>({})
 
   const [distFiles, setDistFiles] = useState<Record<string, string> | null>(null)
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
@@ -23,6 +28,16 @@ const App: React.FC = () => {
   const [isHmrConnected, setIsHmrConnected] = useState<boolean>(false)
   const hmrServerRef = useRef<HmrServer | null>(null)
   const hmrClientRef = useRef<HmrClient | null>(null)
+
+  // 计算哪些标签有未保存的更改
+  const dirtyTabs = useMemo(() => {
+    return openTabs.filter(path => {
+      const editedContent = tabContents[path]
+      if (editedContent === undefined) return false
+      const originalContent = files[path] || ''
+      return editedContent !== originalContent
+    })
+  }, [openTabs, tabContents, files])
 
   const handleBuildEnd = useCallback((result: BuildEndPayload) => {
     const { distFiles, stats } = result;
@@ -161,27 +176,103 @@ const App: React.FC = () => {
     setTimeout(() => setMessage(null), 3000)
   }, [])
 
+  // 处理文件选择 - 打开或切换到标签页
   const handleFileSelect = useCallback((path: string) => {
-    setCurrentFile(path)
+    setOpenTabs(prev => {
+      if (!prev.includes(path)) {
+        return [...prev, path]
+      }
+      return prev
+    })
+    setActiveTab(path)
   }, [])
 
-  const handleFileSave = useCallback((path: string, content: string) => {
+  // 处理标签页切换
+  const handleTabChange = useCallback((path: string) => {
+    setActiveTab(path)
+  }, [])
+
+  // 处理标签页关闭
+  const handleTabClose = useCallback((path: string) => {
+    setOpenTabs(prev => {
+      const newTabs = prev.filter(p => p !== path)
+      // 如果关闭的是当前活动标签，切换到其他标签
+      if (activeTab === path) {
+        const index = prev.indexOf(path)
+        const newActive = newTabs.length > 0 
+          ? newTabs[Math.min(index, newTabs.length - 1)] 
+          : null
+        setActiveTab(newActive)
+      }
+      return newTabs
+    })
+    // 清除该标签的临时内容
+    setTabContents(prev => {
+      const newContents = { ...prev }
+      delete newContents[path]
+      return newContents
+    })
+  }, [activeTab])
+
+  // 处理内容变化
+  const handleContentChange = useCallback((path: string, content: string) => {
+    setTabContents(prev => ({
+      ...prev,
+      [path]: content
+    }))
+  }, [])
+
+  // 保存单个文件
+  const saveFile = useCallback((path: string, content: string) => {
     setFiles(prev => {
       const updated = { ...prev, [path]: content }
       updateFile(path, content)
       return updated
     })
-    showMessage(`✅ 文件已保存: ${path}`, 'success')
-  }, [updateFile, showMessage])
+    // 清除该标签的临时内容
+    setTabContents(prev => {
+      const newContents = { ...prev }
+      delete newContents[path]
+      return newContents
+    })
+  }, [updateFile])
+
+  // 保存当前文件（Cmd+S）
+  const handleSaveCurrent = useCallback(() => {
+    if (activeTab) {
+      const editedContent = tabContents[activeTab]
+      if (editedContent !== undefined) {
+        saveFile(activeTab, editedContent)
+        showMessage(`✅ 已保存: ${activeTab.split('/').pop()}`, 'success')
+      }
+    }
+  }, [activeTab, tabContents, saveFile, showMessage])
+
+  // 保存所有文件
+  const handleSaveAll = useCallback(() => {
+    if (dirtyTabs.length === 0) {
+      showMessage('没有需要保存的文件', 'info')
+      return
+    }
+    
+    dirtyTabs.forEach(path => {
+      const content = tabContents[path]
+      if (content !== undefined) {
+        saveFile(path, content)
+      }
+    })
+    
+    showMessage(`✅ 已保存 ${dirtyTabs.length} 个文件`, 'success')
+  }, [dirtyTabs, tabContents, saveFile, showMessage])
 
   const handleToggleWatch = useCallback(async () => {
     if (isWatchMode) {
       stopWatch()
-      showMessage('Watch 模式已停止', 'success')
+      showMessage('⏹️ Watch 模式已停止', 'success')
     } else {
       try {
         await startWatch()
-        showMessage('Watch 模式已启动', 'success')
+        showMessage('▶️ Watch 模式已启动', 'success')
       } catch (error: any) {
         showMessage('❌ 启动 Watch 失败: ' + error.message, 'error')
       }
@@ -256,13 +347,27 @@ const App: React.FC = () => {
         {/* 左侧文件树 */}
         <div className="w-80 border-r border-gray-300 flex flex-col overflow-hidden bg-white">
           <div className="flex-1 overflow-hidden">
-            <FileTree files={files} onFileSelect={handleFileSelect} currentFile={currentFile} />
+            <FileTree 
+              files={files} 
+              onFileSelect={handleFileSelect} 
+              currentFile={activeTab} 
+            />
           </div>
         </div>
 
         {/* 中间编辑器 */}
         <div className="flex-1 flex flex-col overflow-hidden bg-white">
-          <MonacoEditor files={files} currentFile={currentFile} onSave={handleFileSave} />
+          <MonacoEditor 
+            files={{ ...files, ...tabContents }}
+            openTabs={openTabs}
+            activeTab={activeTab}
+            dirtyTabs={dirtyTabs}
+            onTabChange={handleTabChange}
+            onTabClose={handleTabClose}
+            onSaveCurrent={handleSaveCurrent}
+            onSaveAll={handleSaveAll}
+            onContentChange={handleContentChange}
+          />
         </div>
 
         {/* 右侧操作面板 */}
