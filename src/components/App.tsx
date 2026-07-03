@@ -91,6 +91,9 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
 
+    const swUrl = new URL('sw.js', window.location.href).href;
+    const scope = new URL('.', swUrl).pathname + 'preview/';
+
     const initMessagePort = (sw: ServiceWorker) => {
       console.log('[App] Initializing MessagePort with SW:', sw.scriptURL)
       const channel = new MessageChannel()
@@ -111,11 +114,11 @@ const App: React.FC = () => {
         }
       }
 
-      sw.postMessage({ type: 'INIT_MESSAGE_PORT' }, [channel.port2])
+      sw.postMessage({ type: 'INIT_MESSAGE_PORT', payload: { scope } }, [channel.port2])
     }
 
     // @ts-ignore
-    navigator.serviceWorker.register(`${__APP_BASE__}sw.js`, { scope: `${__APP_BASE__}preview/` })
+    navigator.serviceWorker.register(swUrl, { scope })
       .then(async (registration) => {
         // 等待 SW 激活
         await navigator.serviceWorker.ready

@@ -87,7 +87,6 @@ if (typeof window === 'undefined') {
 
         // If there's a controlling service worker but it's not ours, don't interfere
         if (controlling) {
-            const currentScriptUrl = new URL('coi-serviceworker.js', window.location.href).href;
             if (!controlling.scriptURL.includes('coi-serviceworker')) {
                 return;
             }
@@ -113,7 +112,10 @@ if (typeof window === 'undefined') {
 
         // Register the service worker
         if (coi.shouldRegister()) {
-            n.serviceWorker.register(new URL('coi-serviceworker.js', window.location.href).href).then(
+            const swUrl = new URL('coi-serviceworker.js', window.location.href).href;
+            const scope = new URL('.', swUrl).pathname;
+
+            n.serviceWorker.register(swUrl, { scope }).then(
                 (registration) => {
                     if (!coi.quiet) {
                         console.log("COOP/COEP Service Worker registered", registration.scope);

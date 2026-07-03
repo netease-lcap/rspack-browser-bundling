@@ -1,4 +1,4 @@
-const BaseREG = new RegExp(`^(\/rspack-browser-bundling\/|\/)?preview/`)
+let __APP_BASE__ = null;
 
 const MIME_TYPES = {
   js: 'application/javascript',
@@ -27,13 +27,13 @@ function getMimeType(path) {
 }
 
 function mapPreviewToDist(path) {
-  if (BaseREG.test(path)) {
+  if (path.startsWith(__APP_BASE__)) {
     // 没有指定具体文件类型时，默认返回 index.html
     if (!path.includes('.')) {
       return '/dist/index.html'
     }
 
-    return '/dist/' + path.replace(BaseREG, '')
+    return '/dist/' + path.replace(__APP_BASE__, '')
   }
 
   return path
@@ -53,6 +53,9 @@ self.addEventListener('message', (event) => {
 
   if (type === 'INIT_MESSAGE_PORT') {
     console.log('[SW] Initializing MessagePort')
+
+    __APP_BASE__ = payload?.scope || '/'
+
     messagePort = event.ports[0]
     messagePort.onmessage = (e) => {
       const { type: msgType, payload: msgPayload } = e.data
@@ -91,7 +94,7 @@ self.addEventListener('fetch', (event) => {
 
   console.log('[SW] Fetch event for:', pathname)
 
-  if (!BaseREG.test(pathname)) {
+  if (!pathname.startsWith(__APP_BASE__)) {
     if (event.request.url.startsWith('http://minio-api.codewave-test.163yun.com/lowcode-static/packages') 
       || event.request.url.startsWith('https://minio-api.codewave-test.163yun.com/lowcode-static/packages')
     ) {
