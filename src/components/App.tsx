@@ -87,9 +87,12 @@ const App: React.FC = () => {
 
   const messagePortRef = useRef<MessagePort | null>(null)
   const distFilesRef = useRef<Record<string, string> | null>(null)
+  const swRegisteredRef = useRef(false)
 
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
+    if (swRegisteredRef.current) return
+    swRegisteredRef.current = true
 
     const swUrl = new URL('sw.js', window.location.href).href;
     const scope = new URL('.', swUrl).pathname + 'preview/';
