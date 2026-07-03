@@ -32,10 +32,5 @@
     "@vitejs/plugin-react": "^4.7.0",
     "typescript": "^5.3.3",
     "vite": "^8.0.0"
-  },
-  "pnpm": {
-    "patchedDependencies": {
-      "@rspack/browser@2.0.5": "patches/@rspack__browser@2.0.5.patch"
-    }
   }
 }

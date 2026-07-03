@@ -9,10 +9,7 @@ const base = '/rspack-browser-bundling/'
 
 export default defineConfig({
   base,
-  plugins: [
-    react(),
-    // vitePluginCOI()
-  ],
+  plugins: [react()],
   resolve: {
     alias: {
       '@': nodePath.resolve(__dirname, './src')
@@ -35,5 +32,14 @@ export default defineConfig({
   build: {
     target: 'esnext',
     minify: true,
+    rolldownOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('files.json')) {
+            return 'files';
+          }
+        }
+      }
+    }
   }
 })
